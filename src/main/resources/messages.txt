@@ -1,0 +1,5 @@
+Have you written unit tests yet? If not, do it!
+Keep it simple!
+Remember the single responsibility principle!
+Clean architecture ftw!
+Favor composition over inheritance!
