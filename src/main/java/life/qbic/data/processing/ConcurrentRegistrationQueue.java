@@ -1,7 +1,8 @@
 package life.qbic.data.processing;
 
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import life.qbic.data.processing.registration.RegistrationRequest;
 
 /**
  * <b><class short description - 1 Line!></b>
@@ -10,22 +11,22 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @since <version tag>
  */
-public class ConcurrentEventQueue {
+public class ConcurrentRegistrationQueue {
 
-  private final Queue<RegistrationRequestEvent> queue = new ConcurrentLinkedQueue<>();
+  private final Queue<RegistrationRequest> queue = new LinkedBlockingQueue<>();
 
   private static final int DEFAULT_CAPACITY = 10;
   private final int capacity;
 
-  public ConcurrentEventQueue() {
+  public ConcurrentRegistrationQueue() {
     this(DEFAULT_CAPACITY);
   }
 
-  public ConcurrentEventQueue(int capacity) {
+  public ConcurrentRegistrationQueue(int capacity) {
     this.capacity = capacity;
   }
 
-  public synchronized void add(RegistrationRequestEvent event) {
+  public synchronized void add(RegistrationRequest request) {
     while (queue.size() >= capacity) {
       try {
         wait();
@@ -33,11 +34,11 @@ public class ConcurrentEventQueue {
         throw new RuntimeException(e);
       }
     }
-    queue.add(event);
+    queue.add(request);
     notify();
   }
 
-  public synchronized RegistrationRequestEvent poll() {
+  public synchronized RegistrationRequest poll() {
     while (queue.isEmpty()) {
       try {
         wait();
@@ -46,5 +47,13 @@ public class ConcurrentEventQueue {
       }
     }
     return queue.poll();
+  }
+
+  public synchronized boolean hasItems() {
+    return !queue.isEmpty();
+  }
+
+  public int items() {
+    return queue.size();
   }
 }

@@ -1,9 +1,8 @@
 package life.qbic.data.processing;
 
-import life.qbic.springminimaltemplate.CodingPrayersMessageService;
-import life.qbic.springminimaltemplate.DeveloperNews;
-import life.qbic.springminimaltemplate.MessageService;
-import life.qbic.springminimaltemplate.NewsMedia;
+import life.qbic.data.processing.config.RegistrationWorkersConfig;
+import life.qbic.data.processing.registration.RegistrationConfiguration;
+import life.qbic.data.processing.scanner.ScannerConfiguration;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -20,22 +19,27 @@ import org.springframework.context.annotation.PropertySource;
 @PropertySource("application.properties")
 class AppConfig {
 
-  @Value("${messages.file}")
-  public String messagesFile;
-
   @Bean
-  MessageService messageService() {
-    return new CodingPrayersMessageService(messagesFile);
+  ScannerConfiguration scannerConfiguration(
+      @Value("${scanner.directory}") String scannerDirectory,
+      @Value("${scanner.interval}") int interval) {
+    return new ScannerConfiguration(scannerDirectory, interval);
   }
 
   @Bean
-  ScannerConfiguration scannerConfiguration(@Value("${scanner.directory}") String scannerDirectory) {
-    return new ScannerConfiguration(scannerDirectory);
+  RegistrationWorkersConfig registrationWorkersConfig(
+      @Value("${registration.threads}") int amountOfWorkers,
+      @Value("${registration.working.dir}") String workingDirectory,
+      @Value("${registration.target.dir}") String targetDirectory) {
+    return new RegistrationWorkersConfig(amountOfWorkers, workingDirectory, targetDirectory);
   }
 
   @Bean
-  NewsMedia newsMedia() {
-    return new DeveloperNews(messageService());
+  RegistrationConfiguration registrationConfiguration(
+      RegistrationWorkersConfig registrationWorkersConfig) {
+    return new RegistrationConfiguration(registrationWorkersConfig.workingDirectory().toString(),
+        registrationWorkersConfig.targetDirectory().toString());
   }
+
 
 }
