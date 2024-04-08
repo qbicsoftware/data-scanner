@@ -66,7 +66,7 @@ public class Scanner extends Thread {
         List<RegistrationRequest> requests = detectDataForRegistration();
         for (RegistrationRequest request : requests) {
           if (submittedRequests.contains(request)) {
-            log.debug("Skipping registration request '{}'", request);
+            log.info("Skipping registration request '{}'", request);
             continue;
           }
           registrationQueue.add(request);

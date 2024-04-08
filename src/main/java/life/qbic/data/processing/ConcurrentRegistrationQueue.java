@@ -46,7 +46,11 @@ public class ConcurrentRegistrationQueue {
         throw new RuntimeException(e);
       }
     }
-    return queue.poll();
+    var request = queue.poll();
+    if (queue.size() == capacity - 1) {
+      notifyAll();
+    }
+    return request;
   }
 
   public synchronized boolean hasItems() {

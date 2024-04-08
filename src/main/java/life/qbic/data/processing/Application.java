@@ -2,7 +2,10 @@ package life.qbic.data.processing;
 
 import java.util.LinkedList;
 import java.util.List;
+import life.qbic.data.processing.config.ProcessingWorkersConfig;
 import life.qbic.data.processing.config.RegistrationWorkersConfig;
+import life.qbic.data.processing.processing.ProcessingConfiguration;
+import life.qbic.data.processing.processing.ProcessingRequest;
 import life.qbic.data.processing.registration.ProcessRegistrationRequest;
 import life.qbic.data.processing.registration.RegistrationConfiguration;
 import life.qbic.data.processing.scanner.Scanner;
@@ -27,6 +30,8 @@ public class Application {
     ScannerConfiguration scannerConfiguration = context.getBean(ScannerConfiguration.class);
     RegistrationWorkersConfig registrationWorkersConfig = context.getBean(RegistrationWorkersConfig.class);
     RegistrationConfiguration registrationConfiguration = context.getBean(RegistrationConfiguration.class);
+    ProcessingWorkersConfig processingWorkersConfig = context.getBean(ProcessingWorkersConfig.class);
+    ProcessingConfiguration processingConfiguration = context.getBean(ProcessingConfiguration.class);
 
     var requestQueue = new ConcurrentRegistrationQueue();
     var scannerThread = new Scanner(scannerConfiguration, requestQueue);
@@ -38,15 +43,25 @@ public class Application {
       registrationWorkers.add(new ProcessRegistrationRequest(requestQueue, registrationConfiguration));
     }
 
+    log.info("Registering %s processing workers...".formatted(processingWorkersConfig.getThreads()));
+
+    List<ProcessingRequest> processingWorkers = new LinkedList<>();
+    for (int i=0; i<processingWorkersConfig.getThreads(); i++) {
+      processingWorkers.add(new ProcessingRequest(processingConfiguration));
+    }
+
 
     scannerThread.start();
     registrationWorkers.forEach(Thread::start);
+    processingWorkers.forEach(Thread::start);
+
 
     Runtime.getRuntime().addShutdownHook(new Thread(null, () ->
     {
       log.info("Shutting sequence initiated...");
       scannerThread.interrupt();
       registrationWorkers.forEach(Thread::interrupt);
+      processingWorkers.forEach(Thread::interrupt);
     }, "Shutdown-thread"));
 
   }

@@ -1,6 +1,9 @@
 package life.qbic.data.processing;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * <b>Provenance Information of Datasets</b>
@@ -9,7 +12,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  *
  * @since 1.0.0
  */
+@JsonIgnoreProperties
 public class Provenance {
+
+  public static final String FILE_NAME = "provenance.json";
 
   /**
    * The path from where the dataset has been picked up originally.
@@ -22,6 +28,15 @@ public class Provenance {
    * <p>
    * Can be a file path when operating on file system level
    */
-  @JsonProperty("id")
-  public String id;
+  @JsonProperty("history")
+  public List<String> history;
+
+  public void addToHistory(String event) {
+    if (history == null) {
+      history = new ArrayList<>();
+    }
+    history.add(event);
+  }
+
+
 }

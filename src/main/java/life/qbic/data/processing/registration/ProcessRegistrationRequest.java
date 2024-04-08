@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import life.qbic.data.processing.ConcurrentRegistrationQueue;
@@ -32,11 +33,14 @@ public class ProcessRegistrationRequest extends Thread {
 
   public ProcessRegistrationRequest(@NonNull ConcurrentRegistrationQueue registrationQueue,
       @NonNull RegistrationConfiguration configuration) {
-    this.setName(threadName.formatted(threadNumber));
+    this.setName(threadName.formatted(nextThreadNumber()));
     this.registrationQueue = registrationQueue;
-    threadNumber++;
     this.workingDirectory = configuration.workingDirectory();
     this.targetDirectory = configuration.targetDirectory();
+  }
+
+  private static int nextThreadNumber() {
+    return threadNumber++;
   }
 
   @Override
@@ -68,7 +72,8 @@ public class ProcessRegistrationRequest extends Thread {
       throws IOException {
     Provenance provenance = new Provenance();
     provenance.originPath = request.origin().toString();
-    provenance.id = newLocation.toString();
+    provenance.history = new ArrayList<>();
+    provenance.history.add(newLocation.toString());
     ObjectMapper mapper = new ObjectMapper();
     mapper.writerWithDefaultPrettyPrinter()
         .writeValue(taskDir.resolve("provenance.json").toFile(), provenance);

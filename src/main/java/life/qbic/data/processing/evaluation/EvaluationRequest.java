@@ -28,6 +28,7 @@ public class EvaluationRequest extends Thread {
   private static final Set<String> activeTasks = new HashSet<>();
   private static final ReentrantLock lock = new ReentrantLock();
   private final AtomicBoolean active = new AtomicBoolean(false);
+  private final AtomicBoolean terminated = new AtomicBoolean(false);
   private final Path workingDirectory;
   private final Path targetDirectory;
   private final Pattern measurementIdPattern;
@@ -52,7 +53,7 @@ public class EvaluationRequest extends Thread {
 
   @Override
   public void run() {
-    while (!Thread.interrupted()) {
+    while (true) {
       active.set(true);
       for (File taskDir : tasks()) {
         if (push(taskDir.getAbsolutePath())) {
@@ -61,6 +62,10 @@ public class EvaluationRequest extends Thread {
         }
       }
       active.set(false);
+      if (terminated.get()) {
+        log.warn("Thread {} terminated", Thread.currentThread().getName());
+        break;
+      }
     }
   }
 
@@ -96,6 +101,7 @@ public class EvaluationRequest extends Thread {
   }
 
   public void interrupt() {
+    terminated.set(true);
     while (active.get()) {
       log.debug("Thread is still active...");
       try {
