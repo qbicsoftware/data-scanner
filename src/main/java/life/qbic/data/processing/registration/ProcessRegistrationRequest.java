@@ -50,6 +50,7 @@ public class ProcessRegistrationRequest extends Thread {
         Path newLocation = taskDir.resolve(request.target().getFileName());
         Files.move(request.target(), newLocation);
         writeProvenanceInformation(taskDir, newLocation, request);
+        Files.move(taskDir, targetDirectory.resolve(taskDir.getFileName()));
       } catch (RuntimeException e) {
         log.error("Error moving task directory", e);
         // TODO move back to user folder

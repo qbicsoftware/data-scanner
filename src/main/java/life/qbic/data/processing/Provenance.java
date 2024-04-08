@@ -3,17 +3,25 @@ package life.qbic.data.processing;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * <b><class short description - 1 Line!></b>
+ * <b>Provenance Information of Datasets</b>
+ * <p>
+ * Captures some dataset provenance metadata for pre-processing purposes.
  *
- * <p><More detailed description - When to use, what it solves, etc.></p>
- *
- * @since <version tag>
+ * @since 1.0.0
  */
 public class Provenance {
 
+  /**
+   * The path from where the dataset has been picked up originally.
+   */
   @JsonProperty("origin")
   public String originPath;
 
+  /**
+   * The current location identifier of the dataset
+   * <p>
+   * Can be a file path when operating on file system level
+   */
   @JsonProperty("id")
   public String id;
 }

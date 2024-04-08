@@ -1,6 +1,11 @@
 package life.qbic.data.processing;
 
+import java.nio.file.Path;
+import life.qbic.data.processing.config.EvaluationWorkersConfig;
+import life.qbic.data.processing.config.ProcessingWorkersConfig;
 import life.qbic.data.processing.config.RegistrationWorkersConfig;
+import life.qbic.data.processing.evaluation.EvaluationConfiguration;
+import life.qbic.data.processing.processing.ProcessingConfiguration;
 import life.qbic.data.processing.registration.RegistrationConfiguration;
 import life.qbic.data.processing.scanner.ScannerConfiguration;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,5 +46,36 @@ class AppConfig {
         registrationWorkersConfig.targetDirectory().toString());
   }
 
+  @Bean
+  EvaluationWorkersConfig evaluationWorkersConfig(
+      @Value("${evaluations.threads}") int amountOfWorkers,
+      @Value("${evaluation.working.dir}") String workingDirectory,
+      @Value("${evaluation.target.dir}") String targetDirectory,
+      @Value("${evaluation.measurement-id.pattern}") String measurementIdPattern) {
+    return new EvaluationWorkersConfig(amountOfWorkers, workingDirectory, targetDirectory,
+        measurementIdPattern);
+  }
+
+  @Bean
+  EvaluationConfiguration evaluationConfiguration(EvaluationWorkersConfig evaluationWorkersConfig) {
+    return new EvaluationConfiguration(evaluationWorkersConfig.workingDirectory().toString(),
+        evaluationWorkersConfig.targetDirectory().toString(),
+        evaluationWorkersConfig.measurementIdPattern().toString());
+  }
+
+  @Bean
+  ProcessingWorkersConfig processingWorkersConfig(
+      @Value("${processing.threads}") int amountOfWorkers,
+      @Value("${processing.working.dir}") String workingDirectory,
+      @Value("${processing.target.dir}") String targetDirectory) {
+    return new ProcessingWorkersConfig(amountOfWorkers, Path.of(workingDirectory),
+        Path.of(targetDirectory));
+  }
+
+  @Bean
+  ProcessingConfiguration processingConfiguration(ProcessingWorkersConfig processingWorkersConfig) {
+    return new ProcessingConfiguration(processingWorkersConfig.getWorkingDirectory(),
+        processingWorkersConfig.getTargetDirectory());
+  }
 
 }
