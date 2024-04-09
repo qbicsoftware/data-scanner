@@ -10,6 +10,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
@@ -129,7 +130,14 @@ public class EvaluationRequest extends Thread {
       return;
     }
 
-    Matcher matcher = measurementIdPattern.matcher(taskDir.getName());
+    var datasetSearch = findDataset(taskDir);
+    if (datasetSearch.isEmpty()) {
+      LOG.error("No dataset found: %s".formatted(taskDir.getAbsolutePath()));
+      moveBackToOrigin(taskDir, provenance, "No dataset directory found.");
+      return;
+    }
+    var dataset = datasetSearch.get();
+    Matcher matcher = measurementIdPattern.matcher(dataset.getName());
     var measurementIdResult = matcher.results().map(MatchResult::group).findFirst();
     if (measurementIdResult.isPresent()) {
       moveToTargetDir(taskDir);
@@ -138,6 +146,10 @@ public class EvaluationRequest extends Thread {
     String reason = "Missing measurement identifier: no known measurement id was found in the content of directory '%s'".formatted(taskDir.getName());
     LOG.error(reason);
     moveBackToOrigin(taskDir, provenance, reason);
+  }
+
+  private Optional<File> findDataset(File taskDir) {
+    return Arrays.stream(taskDir.listFiles()).filter(File::isDirectory).findFirst();
   }
 
   private void moveToSystemIntervention(File taskDir, String reason) {
@@ -166,7 +178,14 @@ public class EvaluationRequest extends Thread {
   }
 
   private void moveToTargetDir(File taskDir) {
-    LOG.info("Moving target directory to " + taskDir.getAbsolutePath());
+    LOG.info("Moving %s to target directory %s".formatted(taskDir.getAbsolutePath(), targetDirectory));
+    try {
+      Files.move(taskDir.toPath(), targetDirectory.resolve(taskDir.getName()));
+    } catch (IOException e) {
+      LOG.error("Cannot move task to target directory: %s".formatted(targetDirectory), e);
+      moveToSystemIntervention(taskDir, "Cannot move task to target directory: %s".formatted(targetDirectory));
+    }
+
   }
 
   private List<File> tasks() {

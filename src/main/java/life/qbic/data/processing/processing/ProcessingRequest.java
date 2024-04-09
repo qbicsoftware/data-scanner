@@ -86,7 +86,6 @@ public class ProcessingRequest extends Thread {
         }
       }
       try {
-        LOG.info("Thread %s is doing sth".formatted(Thread.currentThread().getName()));
         Thread.sleep(1000);
       } catch (InterruptedException e) {
         // This thread will only handle interrupted signals via its explicit
