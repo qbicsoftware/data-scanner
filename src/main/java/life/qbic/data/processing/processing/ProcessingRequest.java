@@ -2,7 +2,6 @@ package life.qbic.data.processing.processing;
 
 import static org.apache.logging.log4j.LogManager.getLogger;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
@@ -17,14 +16,21 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import life.qbic.data.processing.Provenance;
+import life.qbic.data.processing.Provenance.ProvenanceException;
 import org.apache.logging.log4j.Logger;
 
 /**
- * <b><class short description - 1 Line!></b>
+ * <b><Process request</b>
  *
- * <p><More detailed description - When to use, what it solves, etc.></p>
+ * <p>Does some simple checks:
  *
- * @since <version tag>
+ * <ul>
+ *   <li>the content is not empty</li>
+ *   <li>there is a dataset and a provenance file</li>
+ *   <li>the provenance file can be parsed and the content passes the sanity check</li>
+ * </ul>
+ *
+ * @since 1.0.0
  */
 public class ProcessingRequest extends Thread {
 
@@ -32,19 +38,20 @@ public class ProcessingRequest extends Thread {
   private static final String THREAD_NAME = "Processing-%s";
   private static final Set<String> ACTIVE_TASKS = new HashSet<>();
   private static final ReentrantLock LOCK = new ReentrantLock();
+  private static final String INTERVENTION_DIRECTORY = "interventions";
   private static int threadNumber = 1;
   private final Path workingDirectory;
   private final Path targetDirectory;
   private final AtomicBoolean active = new AtomicBoolean(false);
   private final AtomicBoolean terminated = new AtomicBoolean(false);
   private final Path interventionDirectory;
-  private static final String INTERVENTION_DIRECTORY = "interventions";
 
   public ProcessingRequest(ProcessingConfiguration processingConfiguration) {
     this.setName(THREAD_NAME.formatted(nextThreadNumber()));
     this.workingDirectory = processingConfiguration.getWorkingDirectory();
     this.targetDirectory = processingConfiguration.getTargetDirectory();
-    if (!workingDirectory.resolve(INTERVENTION_DIRECTORY).toFile().mkdir() && !workingDirectory.resolve(
+    if (!workingDirectory.resolve(INTERVENTION_DIRECTORY).toFile().mkdir()
+        && !workingDirectory.resolve(
         INTERVENTION_DIRECTORY).toFile().exists()) {
       throw new RuntimeException(
           "Could not create intervention directory for processing request at " + workingDirectory);
@@ -92,42 +99,71 @@ public class ProcessingRequest extends Thread {
     }
   }
 
+  /**
+   * @param taskDir
+   * @since
+   */
   private void processFile(File taskDir) {
     var taskDirContent = Arrays.stream(Objects.requireNonNull(taskDir.listFiles())).toList();
+
+    if (checkForEmpty(taskDir, taskDirContent)) {
+      return;
+    }
+
+    Optional<File> provenanceFileSearch = findProvenanceFile(taskDirContent);
+    if (provenanceFileSearch.isEmpty()) {
+      LOG.error("Task %s has no provenance file".formatted(taskDir.getAbsolutePath()));
+      moveToSystemIntervention(taskDir, "No provenance file provided");
+      return;
+    }
+
+    Provenance provenance = null;
+    try {
+      provenance = Provenance.parse(provenanceFileSearch.get().toPath());
+    } catch (ProvenanceException e) {
+      LOG.error("Error parsing provenance file", e);
+      switch (e.code()) {
+        case IO_ERROR, NOT_FOUND, UNKNOWN_CONTENT, PERMISSION_DENIED ->
+            moveToSystemIntervention(taskDir, e.getMessage());
+      }
+      return;
+    }
+
+    Provenance finalProvenance = provenance;
+    taskDirContent.stream().filter(file -> !file.getName().equals(Provenance.FILE_NAME)).findFirst()
+        .ifPresent(file -> {
+          finalProvenance.addToHistory(taskDir.getAbsolutePath());
+          try {
+            writeProvenance(provenanceFileSearch.get(), finalProvenance);
+          } catch (IOException e) {
+            LOG.error("Could not write provenance file " + file.getAbsolutePath(), e);
+            moveToSystemIntervention(taskDir, "Writing provenance file failed");
+          }
+          try {
+            moveToTargetFolder(taskDir);
+          } catch (IOException e) {
+            LOG.error("Could not move task %s to target location".formatted(file.getAbsolutePath()),
+                e);
+            moveToSystemIntervention(taskDir, "Writing task directory failed");
+          }
+        });
+  }
+
+  private Optional<File> findProvenanceFile(List<File> taskDirContent) {
+    Optional<File> provenanceFileSearch = taskDirContent.stream()
+        .filter(file -> file.getName().equals(Provenance.FILE_NAME)).findFirst();
+    return provenanceFileSearch;
+  }
+
+  private boolean checkForEmpty(File taskDir, List<File> taskDirContent) {
     if (taskDirContent.isEmpty()) {
       LOG.error("Task %s has no files", taskDir.getAbsolutePath());
       clearTask(taskDir);
       taskDir.delete();
       LOG.info("Empty task %s deleted", taskDir.getAbsolutePath());
-      return;
+      return true;
     }
-    Optional<File> provenanceFileSearch = taskDirContent.stream().filter(file -> file.getName().equals(Provenance.FILE_NAME)).findFirst();
-    if (provenanceFileSearch.isEmpty()) {
-      LOG.error("Task %s has no provenance file".formatted(taskDir.getAbsolutePath()));
-      moveToIntervention(taskDir, "No provenance file provided");
-      return;
-    }
-    var provenanceContent = readProvenance(provenanceFileSearch.get());
-    if (provenanceContent.isEmpty()) {
-      LOG.error("Task %s has no provenance file content".formatted(taskDir.getAbsolutePath()));
-      return;
-    }
-    taskDirContent.stream().filter(file -> !file.getName().equals(Provenance.FILE_NAME)).findFirst().ifPresent(file -> {
-      var provenance = provenanceContent.get();
-      provenance.addToHistory(taskDir.getAbsolutePath());
-      try {
-        writeProvenance(provenanceFileSearch.get(), provenance);
-      } catch (IOException e) {
-        LOG.error("Could not write provenance file " + file.getAbsolutePath(), e);
-        moveToIntervention(taskDir, "Writing provenance file failed");
-      }
-      try {
-        moveToTargetFolder(taskDir);
-      } catch (IOException e) {
-        LOG.error("Could not move task %s to target location".formatted(file.getAbsolutePath()), e);
-        moveToIntervention(taskDir, "Writing task directory failed" );
-      }
-    });
+    return false;
   }
 
   private void moveToTargetFolder(File taskDir) throws IOException {
@@ -139,18 +175,7 @@ public class ProcessingRequest extends Thread {
     mapper.writerWithDefaultPrettyPrinter().writeValue(provenanceFile, provenance);
   }
 
-  private Optional<Provenance> readProvenance(File taskDir) {
-    var objectMapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    Provenance value = null;
-    try {
-      value = objectMapper.readValue(taskDir, Provenance.class);
-    } catch (IOException e) {
-      LOG.error("Error reading provenance file", e);
-    }
-    return Optional.ofNullable(value);
-  }
-
-  private void moveToIntervention(File taskDir, String reason) {
+  private void moveToSystemIntervention(File taskDir, String reason) {
     try {
       var errorFile = taskDir.toPath().resolve("error.txt").toFile();
       errorFile.createNewFile();
@@ -159,7 +184,6 @@ public class ProcessingRequest extends Thread {
     } catch (IOException e) {
       throw new RuntimeException("Cannot move task to intervention: %s".formatted(taskDir), e);
     }
-
   }
 
   private void clearTask(File taskDir) {
