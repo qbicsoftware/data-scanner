@@ -3,6 +3,7 @@ package life.qbic.data.processing.evaluation;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.regex.Pattern;
+import life.qbic.data.processing.GlobalConfig;
 
 /**
  * <b><class short description - 1 Line!></b>
@@ -16,8 +17,10 @@ public class EvaluationConfiguration {
   private final Path workingDirectory;
   private final Path targetDirectory;
   private final Pattern measurementIdPattern;
+  private final Path usersErrorDirectory;
 
-  public EvaluationConfiguration(String workingDirectory, String targetDirectory, String measurementIdPattern) {
+  public EvaluationConfiguration(String workingDirectory, String targetDirectory, String measurementIdPattern,
+      GlobalConfig globalConfig) {
     this.workingDirectory = Paths.get(workingDirectory);
     if (!this.workingDirectory.toFile().exists()) {
       throw new IllegalArgumentException("Evaluation worker directory does not exist");
@@ -29,6 +32,7 @@ public class EvaluationConfiguration {
     if (measurementIdPattern.isBlank()) {
       throw new IllegalArgumentException("Measurement id pattern cannot be blank");
     }
+    this.usersErrorDirectory = globalConfig.usersErrorDirectory();
     this.measurementIdPattern = Pattern.compile(measurementIdPattern);
   }
 
@@ -42,6 +46,10 @@ public class EvaluationConfiguration {
 
   public Pattern measurementIdPattern() {
     return measurementIdPattern;
+  }
+
+  public Path usersErrorDirectory() {
+    return usersErrorDirectory;
   }
 
 }

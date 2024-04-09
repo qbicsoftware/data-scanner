@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import life.qbic.data.processing.ConcurrentRegistrationQueue;
+import life.qbic.data.processing.GlobalConfig;
 import life.qbic.data.processing.registration.RegistrationRequest;
 import org.apache.logging.log4j.Logger;
 
@@ -35,9 +36,10 @@ public class Scanner extends Thread {
   private final HashSet<Path> userProcessDirectories = new HashSet<>();
   private final ConcurrentRegistrationQueue registrationQueue;
   private final HashSet<RegistrationRequest> submittedRequests = new HashSet<>();
+  private final Path usersErrorDirectory;
 
   public Scanner(ScannerConfiguration scannerConfiguration,
-      ConcurrentRegistrationQueue registrationQueue) {
+      ConcurrentRegistrationQueue registrationQueue, GlobalConfig globalConfig) {
     this.setName("Scanner-Thread");
     Objects.requireNonNull(scannerConfiguration, "scannerConfiguration must not be null");
     scannerPath = Path.of(scannerConfiguration.scannerDirectory());
@@ -47,6 +49,7 @@ public class Scanner extends Thread {
     this.scanInterval = scannerConfiguration.scanInterval();
     this.registrationQueue = Objects.requireNonNull(registrationQueue,
         "eventQueue must not be null");
+    this.usersErrorDirectory = globalConfig.usersErrorDirectory();
   }
 
   @Override
@@ -85,21 +88,25 @@ public class Scanner extends Thread {
   private List<RegistrationRequest> detectDataForRegistration() {
     return userProcessDirectories.parallelStream()
         .map(Path::toFile)
-        .map(File::listFiles)
-        .map(this::createRequests).flatMap(
+        .map(file -> createRequests(file.listFiles(), file.toPath())).flatMap(
             Collection::stream).toList();
   }
 
-  private List<RegistrationRequest> createRequests(File[] files) {
+  private boolean isNotErrorFolder(File folder) {
+    return !folder.getName().equals(usersErrorDirectory.getFileName());
+  }
+
+  private List<RegistrationRequest> createRequests(File[] files, Path userDirectory) {
     if (files == null || files.length == 0) {
       return new ArrayList<>();
     }
-    return Arrays.stream(files).filter(file -> !file.isHidden()).map(this::createRequest).toList();
+    return Arrays.stream(files).filter(file -> !file.isHidden()).filter(this::isNotErrorFolder)
+        .map(file -> createRequest(file, userDirectory)).toList();
   }
 
-  private RegistrationRequest createRequest(File file) {
+  private RegistrationRequest createRequest(File file, Path userDirectory) {
     return new RegistrationRequest(Instant.now(), file.lastModified(),
-        file.getParentFile().toPath(), file.toPath());
+        file.getParentFile().toPath(), file.toPath(), userDirectory.getParent());
   }
 
   private void removePathZombies() {

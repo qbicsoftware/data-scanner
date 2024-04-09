@@ -2,8 +2,11 @@ package life.qbic.data.processing;
 
 import java.util.LinkedList;
 import java.util.List;
+import life.qbic.data.processing.config.EvaluationWorkersConfig;
 import life.qbic.data.processing.config.ProcessingWorkersConfig;
 import life.qbic.data.processing.config.RegistrationWorkersConfig;
+import life.qbic.data.processing.evaluation.EvaluationConfiguration;
+import life.qbic.data.processing.evaluation.EvaluationRequest;
 import life.qbic.data.processing.processing.ProcessingConfiguration;
 import life.qbic.data.processing.processing.ProcessingRequest;
 import life.qbic.data.processing.registration.ProcessRegistrationRequest;
@@ -32,9 +35,12 @@ public class Application {
     RegistrationConfiguration registrationConfiguration = context.getBean(RegistrationConfiguration.class);
     ProcessingWorkersConfig processingWorkersConfig = context.getBean(ProcessingWorkersConfig.class);
     ProcessingConfiguration processingConfiguration = context.getBean(ProcessingConfiguration.class);
+    EvaluationWorkersConfig evaluationWorkersConfig = context.getBean(EvaluationWorkersConfig.class);
+    EvaluationConfiguration evaluationConfiguration = context.getBean(EvaluationConfiguration.class);
+    GlobalConfig globalConfig = context.getBean(GlobalConfig.class);
 
     var requestQueue = new ConcurrentRegistrationQueue();
-    var scannerThread = new Scanner(scannerConfiguration, requestQueue);
+    var scannerThread = new Scanner(scannerConfiguration, requestQueue, globalConfig);
 
     log.info("Registering %s registration workers...".formatted(registrationWorkersConfig.amountOfWorkers()));
 
@@ -43,18 +49,24 @@ public class Application {
       registrationWorkers.add(new ProcessRegistrationRequest(requestQueue, registrationConfiguration));
     }
 
-    log.info("Registering %s processing workers...".formatted(processingWorkersConfig.getThreads()));
+    log.info("Registering %s processing workers...".formatted(processingWorkersConfig.threads()));
 
     List<ProcessingRequest> processingWorkers = new LinkedList<>();
-    for (int i=0; i<processingWorkersConfig.getThreads(); i++) {
+    for (int i=0; i<processingWorkersConfig.threads(); i++) {
       processingWorkers.add(new ProcessingRequest(processingConfiguration));
     }
 
+    log.info("Registering %s evaluation workers...".formatted(evaluationWorkersConfig.threads()));
+
+    List<EvaluationRequest> evaluationWorkers = new LinkedList<>();
+    for (int i=0; i<evaluationWorkersConfig.threads(); i++) {
+      evaluationWorkers.add(new EvaluationRequest(evaluationConfiguration));
+    }
 
     scannerThread.start();
     registrationWorkers.forEach(Thread::start);
     processingWorkers.forEach(Thread::start);
-
+    evaluationWorkers.forEach(Thread::start);
 
     Runtime.getRuntime().addShutdownHook(new Thread(null, () ->
     {
@@ -62,6 +74,7 @@ public class Application {
       scannerThread.interrupt();
       registrationWorkers.forEach(Thread::interrupt);
       processingWorkers.forEach(Thread::interrupt);
+      evaluationWorkers.forEach(Thread::interrupt);
     }, "Shutdown-thread"));
 
   }

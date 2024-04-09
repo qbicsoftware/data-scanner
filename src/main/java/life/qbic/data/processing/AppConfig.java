@@ -57,10 +57,11 @@ class AppConfig {
   }
 
   @Bean
-  EvaluationConfiguration evaluationConfiguration(EvaluationWorkersConfig evaluationWorkersConfig) {
+  EvaluationConfiguration evaluationConfiguration(EvaluationWorkersConfig evaluationWorkersConfig,
+      GlobalConfig globalConfig) {
     return new EvaluationConfiguration(evaluationWorkersConfig.workingDirectory().toString(),
         evaluationWorkersConfig.targetDirectory().toString(),
-        evaluationWorkersConfig.measurementIdPattern().toString());
+        evaluationWorkersConfig.measurementIdPattern().toString(), globalConfig);
   }
 
   @Bean
@@ -74,8 +75,14 @@ class AppConfig {
 
   @Bean
   ProcessingConfiguration processingConfiguration(ProcessingWorkersConfig processingWorkersConfig) {
-    return new ProcessingConfiguration(processingWorkersConfig.getWorkingDirectory(),
-        processingWorkersConfig.getTargetDirectory());
+    return new ProcessingConfiguration(processingWorkersConfig.workingDirectory(),
+        processingWorkersConfig.targetDirectory());
+  }
+
+  @Bean
+  GlobalConfig globalConfig(
+      @Value("${users.error.directory.name}") String usersErrorDirectoryName) {
+    return new GlobalConfig(usersErrorDirectoryName);
   }
 
 }

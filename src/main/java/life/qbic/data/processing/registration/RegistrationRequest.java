@@ -11,7 +11,7 @@ import java.util.Objects;
  *
  * @since <version tag>
  */
-public record RegistrationRequest(Instant timestamp, long lastModified, Path origin, Path target) {
+public record RegistrationRequest(Instant timestamp, long lastModified, Path origin, Path target, Path userPath) {
 
   @Override
   public boolean equals(Object o) {

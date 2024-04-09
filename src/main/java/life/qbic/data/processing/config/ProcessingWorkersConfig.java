@@ -34,15 +34,15 @@ public class ProcessingWorkersConfig {
     this.targetDirectory = targetDirectory;
   }
 
-  public int getThreads() {
+  public int threads() {
     return threads;
   }
 
-  public Path getWorkingDirectory() {
+  public Path workingDirectory() {
     return workingDirectory;
   }
 
-  public Path getTargetDirectory() {
+  public Path targetDirectory() {
     return targetDirectory;
   }
 }

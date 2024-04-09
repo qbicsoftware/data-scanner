@@ -82,6 +82,7 @@ public class ProcessingRequest extends Thread {
         if (push(taskDir.getAbsolutePath())) {
           LOG.info("Registering task " + taskDir.getAbsolutePath());
           processFile(taskDir);
+          clearTask(taskDir);
         }
       }
       try {

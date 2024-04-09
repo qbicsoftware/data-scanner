@@ -10,7 +10,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * <b>Provenance Information of Datasets</b>
@@ -30,6 +33,9 @@ public class Provenance {
   @JsonProperty("origin")
   public String originPath;
 
+  @JsonProperty("user")
+  public String userPath;
+
   /**
    * The current location identifier of the dataset
    * <p>
@@ -41,21 +47,32 @@ public class Provenance {
   public static Provenance parse(Path json) throws ProvenanceException {
     File provenanceFile = json.toFile();
     if (!provenanceFile.exists()) {
-      throw new ProvenanceException("File does not exist: %s".formatted(provenanceFile), ERROR_CODE.NOT_FOUND);
+      throw new ProvenanceException("File does not exist: %s".formatted(provenanceFile),
+          ERROR_CODE.NOT_FOUND);
     }
     if (!provenanceFile.canRead()) {
-      throw new ProvenanceException("Cannot read file: %s".formatted(provenanceFile), ERROR_CODE.PERMISSION_DENIED);
+      throw new ProvenanceException("Cannot read file: %s".formatted(provenanceFile),
+          ERROR_CODE.PERMISSION_DENIED);
     }
-    ObjectMapper mapper = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);;
+    ObjectMapper mapper = new ObjectMapper().configure(
+        DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    ;
     Provenance provenance;
     try {
       provenance = mapper.readValue(Files.readString(json), Provenance.class);
     } catch (JsonProcessingException e) {
-      throw new ProvenanceException("Cannot read content %s".formatted(json), e, ERROR_CODE.UNKNOWN_CONTENT);
+      throw new ProvenanceException("Cannot read content %s".formatted(json), e,
+          ERROR_CODE.UNKNOWN_CONTENT);
     } catch (IOException e) {
-      throw new ProvenanceException("IO Error: %s".formatted(e.getMessage()), e, ERROR_CODE.IO_ERROR);
+      throw new ProvenanceException("IO Error: %s".formatted(e.getMessage()), e,
+          ERROR_CODE.IO_ERROR);
     }
     return provenance;
+  }
+
+  public static Optional<File> findProvenance(Path directory) {
+    return Arrays.stream(Objects.requireNonNull(directory.toFile().listFiles()))
+        .filter(file -> file.getName().equals(Provenance.FILE_NAME)).findFirst();
   }
 
   public void addToHistory(String event) {
