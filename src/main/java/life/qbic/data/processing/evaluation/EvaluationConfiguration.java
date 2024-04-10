@@ -6,11 +6,11 @@ import java.util.regex.Pattern;
 import life.qbic.data.processing.GlobalConfig;
 
 /**
- * <b><class short description - 1 Line!></b>
+ * <b>Evaluation Configuration</b>
+ * <p>
+ * The configuration class for {@link EvaluationRequest} workers.
  *
- * <p><More detailed description - When to use, what it solves, etc.></p>
- *
- * @since <version tag>
+ * @since 1.0.0
  */
 public class EvaluationConfiguration {
 
@@ -19,7 +19,8 @@ public class EvaluationConfiguration {
   private final Pattern measurementIdPattern;
   private final Path usersErrorDirectory;
 
-  public EvaluationConfiguration(String workingDirectory, String targetDirectory, String measurementIdPattern,
+  public EvaluationConfiguration(String workingDirectory, String targetDirectory,
+      String measurementIdPattern,
       GlobalConfig globalConfig) {
     this.workingDirectory = Paths.get(workingDirectory);
     if (!this.workingDirectory.toFile().exists()) {

@@ -4,13 +4,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Objects;
 
-/**
- * <b><record short description - 1 Line!></b>
- *
- * <p><More detailed description - When to use, what it solves, etc.></p>
- *
- * @since <version tag>
- */
 public record RegistrationRequest(Instant timestamp, long lastModified, Path origin, Path target, Path userPath) {
 
   @Override

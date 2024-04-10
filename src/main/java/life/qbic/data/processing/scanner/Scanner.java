@@ -20,11 +20,16 @@ import life.qbic.data.processing.registration.RegistrationRequest;
 import org.apache.logging.log4j.Logger;
 
 /**
- * <b><class short description - 1 Line!></b>
+ * <b>Scanner</b>
+ * <p>
+ * The scanner thread iterates over the specified directory and records every directory present as
+ * "user" directory.
+ * <p>
+ * In the current configuration, the scanner detects activity in a directory named "registration"
+ * within each user directory. Every event outside this directory is ignored, since data that is
+ * currently uploaded must not be processed, which will lead to corrupt data.
  *
- * <p><More detailed description - When to use, what it solves, etc.></p>
- *
- * @since <version tag>
+ * @since 1.0.0
  */
 public class Scanner extends Thread {
 

@@ -28,6 +28,7 @@ import org.apache.logging.log4j.Logger;
  *   <li>the content is not empty</li>
  *   <li>there is a dataset and a provenance file</li>
  *   <li>the provenance file can be parsed and the content passes the sanity check</li>
+ *   <li>package a dataset properly, if it is a file</li>
  * </ul>
  *
  * @since 1.0.0
@@ -130,6 +131,7 @@ public class ProcessingRequest extends Thread {
     }
 
     Provenance finalProvenance = provenance;
+    packageDataset(taskDir);
     taskDirContent.stream().filter(file -> !file.getName().equals(Provenance.FILE_NAME)).findFirst()
         .ifPresent(file -> {
           finalProvenance.addToHistory(taskDir.getAbsolutePath());
@@ -147,6 +149,22 @@ public class ProcessingRequest extends Thread {
             moveToSystemIntervention(taskDir, "Writing task directory failed");
           }
         });
+  }
+
+  private void packageDataset(File taskDir) {
+    Optional<File> datasetSearch = Arrays.stream(taskDir.listFiles())
+        .filter(file -> !file.getName().equals(Provenance.FILE_NAME)).findFirst();
+    datasetSearch.ifPresent(file -> {
+      if (file.isFile()) {
+       File datasetDir = taskDir.toPath().resolve(file.getName() + "_dataset").toFile();
+       datasetDir.mkdir();
+        try {
+          Files.move(file.toPath(), datasetDir.toPath().resolve(file.getName()));
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    });
   }
 
   private Optional<File> findProvenanceFile(List<File> taskDirContent) {

@@ -22,11 +22,15 @@ import life.qbic.data.processing.Provenance.ProvenanceException;
 import org.apache.logging.log4j.Logger;
 
 /**
- * <b><class short description - 1 Line!></b>
+ * <b>Evaluation Request</b>
  *
- * <p><More detailed description - When to use, what it solves, etc.></p>
+ * <p>Currently only validates the presence of a QBiC measurement ID in the dataset root
+ * folder.</p>
+ * <p>
+ * If none is present, or the identifier does not match the requirements, it is moved back to the
+ * users error folder.
  *
- * @since <version tag>
+ * @since 1.0.0
  */
 public class EvaluationRequest extends Thread {
 
@@ -62,7 +66,8 @@ public class EvaluationRequest extends Thread {
 
   public EvaluationRequest(EvaluationConfiguration evaluationConfiguration) {
     this(evaluationConfiguration.workingDirectory(), evaluationConfiguration.targetDirectory(),
-        evaluationConfiguration.measurementIdPattern(), evaluationConfiguration.usersErrorDirectory());
+        evaluationConfiguration.measurementIdPattern(),
+        evaluationConfiguration.usersErrorDirectory());
   }
 
   private static int nextThreadNumber() {
@@ -114,7 +119,7 @@ public class EvaluationRequest extends Thread {
   }
 
   private void evaluateDirectory(File taskDir) {
-    var provenanceSearch =  Provenance.findProvenance(taskDir.toPath());
+    var provenanceSearch = Provenance.findProvenance(taskDir.toPath());
     if (provenanceSearch.isEmpty()) {
       LOG.error("No provenance file found: %s".formatted(taskDir.getAbsolutePath()));
       moveToSystemIntervention(taskDir, "Provenance file was not found");
@@ -143,7 +148,8 @@ public class EvaluationRequest extends Thread {
       moveToTargetDir(taskDir);
       return;
     }
-    String reason = "Missing measurement identifier: no known measurement id was found in the content of directory '%s'".formatted(taskDir.getName());
+    String reason = "Missing measurement identifier: no known measurement id was found in the content of directory '%s'".formatted(
+        taskDir.getName());
     LOG.error(reason);
     moveBackToOrigin(taskDir, provenance, reason);
   }
@@ -170,7 +176,8 @@ public class EvaluationRequest extends Thread {
       errorFile.createNewFile();
       Files.writeString(errorFile.toPath(), reason);
       Paths.get(provenance.userPath).resolve(usersErrorDirectory).toFile().mkdir();
-      Files.move(taskDir.toPath(), Paths.get(provenance.userPath).resolve(usersErrorDirectory).resolve(taskDir.getName()));
+      Files.move(taskDir.toPath(),
+          Paths.get(provenance.userPath).resolve(usersErrorDirectory).resolve(taskDir.getName()));
     } catch (IOException e) {
       LOG.error("Cannot move task to user intervention: %s".formatted(provenance.originPath), e);
       moveToSystemIntervention(taskDir, e.getMessage());
@@ -178,12 +185,14 @@ public class EvaluationRequest extends Thread {
   }
 
   private void moveToTargetDir(File taskDir) {
-    LOG.info("Moving %s to target directory %s".formatted(taskDir.getAbsolutePath(), targetDirectory));
+    LOG.info(
+        "Moving %s to target directory %s".formatted(taskDir.getAbsolutePath(), targetDirectory));
     try {
       Files.move(taskDir.toPath(), targetDirectory.resolve(taskDir.getName()));
     } catch (IOException e) {
       LOG.error("Cannot move task to target directory: %s".formatted(targetDirectory), e);
-      moveToSystemIntervention(taskDir, "Cannot move task to target directory: %s".formatted(targetDirectory));
+      moveToSystemIntervention(taskDir,
+          "Cannot move task to target directory: %s".formatted(targetDirectory));
     }
 
   }

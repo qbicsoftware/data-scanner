@@ -15,11 +15,22 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.lang.NonNull;
 
 /**
- * <b><class short description - 1 Line!></b>
+ * <b>Process Registration Request</b>
+ * <p>
+ * This must be the first process of handling a new incoming dataset. It will consume a processing
+ * request item, that is then used to prepare the dataset for the following downstream processes.
+ * <p>
+ * The process polls the {@link ConcurrentRegistrationQueue} shared with the scanning thread.
  *
- * <p><More detailed description - When to use, what it solves, etc.></p>
+ * <p>
+ * The process will do the following tasks:
+ * <ul>
+ *   <li>Wraps a new dataset into a task directory with a random UUID as task name</li>
+ *   <li>Creating a provenance JSON file, that is used on downstream processes and holds required provenance data</li>
+ *   <li>Moving the dataset to the next processing directory</li>
+ * </ul>
  *
- * @since <version tag>
+ * @since 1.0.0
  */
 public class ProcessRegistrationRequest extends Thread {
 
@@ -68,7 +79,8 @@ public class ProcessRegistrationRequest extends Thread {
     }
   }
 
-  private void writeProvenanceInformation(Path taskDir, Path newLocation, RegistrationRequest request)
+  private void writeProvenanceInformation(Path taskDir, Path newLocation,
+      RegistrationRequest request)
       throws IOException {
     Provenance provenance = new Provenance();
     provenance.originPath = request.origin().toString();

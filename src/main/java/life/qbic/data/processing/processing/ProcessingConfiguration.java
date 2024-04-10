@@ -3,11 +3,13 @@ package life.qbic.data.processing.processing;
 import java.nio.file.Path;
 
 /**
- * <b><class short description - 1 Line!></b>
+ * <b>Processing Configuration</b>
  *
- * <p><More detailed description - When to use, what it solves, etc.></p>
+ * <p>Holds processing worker configuration settings, such as the working directory of the process
+ * and the next target directory the dataset will be moved to, after a successful task
+ * performance.</p>
  *
- * @since <version tag>
+ * @since 1.0.0
  */
 public class ProcessingConfiguration {
 
