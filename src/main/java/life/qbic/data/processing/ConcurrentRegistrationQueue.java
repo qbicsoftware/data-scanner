@@ -1,8 +1,11 @@
 package life.qbic.data.processing;
 
+import static org.apache.logging.log4j.LogManager.getLogger;
+
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 import life.qbic.data.processing.registration.RegistrationRequest;
+import org.apache.logging.log4j.Logger;
 
 /**
  * <b>Concurrent Registration Queue</b>
@@ -16,6 +19,8 @@ public class ConcurrentRegistrationQueue {
   private static final int DEFAULT_CAPACITY = 10;
   private final Queue<RegistrationRequest> queue = new LinkedBlockingQueue<>();
   private final int capacity;
+  private static final Logger log = getLogger(ConcurrentRegistrationQueue.class);
+
 
   public ConcurrentRegistrationQueue() {
     this(DEFAULT_CAPACITY);
@@ -39,7 +44,8 @@ public class ConcurrentRegistrationQueue {
       try {
         wait();
       } catch (InterruptedException e) {
-        throw new RuntimeException(e);
+        log.error("Interrupted while waiting for registration request", e);
+        Thread.currentThread().interrupt();
       }
     }
     queue.add(request);
@@ -60,7 +66,8 @@ public class ConcurrentRegistrationQueue {
       try {
         wait();
       } catch (InterruptedException e) {
-        throw new RuntimeException(e);
+        log.error("Interrupted while waiting for registration request", e);
+        Thread.currentThread().interrupt();
       }
     }
     var request = queue.poll();
