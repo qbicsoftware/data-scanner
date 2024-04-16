@@ -2,6 +2,7 @@ package life.qbic.data.processing.evaluation;
 
 import static org.apache.logging.log4j.LogManager.getLogger;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -149,6 +150,14 @@ public class EvaluationRequest extends Thread {
     Matcher matcher = measurementIdPattern.matcher(dataset.getName());
     var measurementIdResult = matcher.results().map(MatchResult::group).findFirst();
     if (measurementIdResult.isPresent()) {
+      provenance.qbicMeasurementID = measurementIdResult.get();
+      provenance.addToHistory(taskDir.getAbsolutePath());
+      try {
+        updateProvenanceFile(provenanceSearch.get(), provenance);
+      } catch (IOException e) {
+        LOG.error("Could not update provenance file: %s".formatted(taskDir.getAbsolutePath()), e);
+        moveToSystemIntervention(taskDir, e.getMessage());
+      }
       moveToTargetDir(taskDir);
       try {
         createMarkerFile(targetDirectory, taskDir.getName());
@@ -164,6 +173,11 @@ public class EvaluationRequest extends Thread {
         "Missing measurement identifier: no known measurement id was found in the content of directory '%s' in task '%s'".formatted(
             dataset.getName(), taskDir.getName()));
     moveBackToOrigin(taskDir, provenance, errorMessage.toString());
+  }
+
+  private void updateProvenanceFile(File provenanceFile, Provenance provenance) throws IOException {
+    var mapper = new ObjectMapper();
+    mapper.writerWithDefaultPrettyPrinter().writeValue(provenanceFile, provenance);
   }
 
   private boolean createMarkerFile(Path targetDirectory, String name) throws IOException {

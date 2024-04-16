@@ -39,6 +39,9 @@ public class Provenance {
   @JsonProperty("user")
   public String userWorkDirectoryPath;
 
+  @JsonProperty("measurementId")
+  public String qbicMeasurementID;
+
   /**
    * A list of ordered processing folder stops the dataset has traversed and passed successfully.
    * <p>
