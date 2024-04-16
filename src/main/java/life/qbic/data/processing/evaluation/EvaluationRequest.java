@@ -17,6 +17,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import life.qbic.data.processing.ErrorSummary;
 import life.qbic.data.processing.Provenance;
 import life.qbic.data.processing.Provenance.ProvenanceException;
 import org.apache.logging.log4j.Logger;
@@ -148,10 +149,12 @@ public class EvaluationRequest extends Thread {
       moveToTargetDir(taskDir);
       return;
     }
-    String reason = "Missing measurement identifier: no known measurement id was found in the content of directory '%s'".formatted(
-        taskDir.getName());
-    LOG.error(reason);
-    moveBackToOrigin(taskDir, provenance, reason);
+    var errorMessage = ErrorSummary.createSimple(taskDir.getName(), dataset.getName(), "Missing QBiC measurement ID",
+        "For a successful registration please provide the pre-registered QBiC measurement ID");
+    LOG.error(
+        "Missing measurement identifier: no known measurement id was found in the content of directory '%s' in task '%s'".formatted(
+            dataset.getName(), taskDir.getName()));
+    moveBackToOrigin(taskDir, provenance, errorMessage.toString());
   }
 
   private Optional<File> findDataset(File taskDir) {
@@ -177,7 +180,8 @@ public class EvaluationRequest extends Thread {
       Files.writeString(errorFile.toPath(), reason);
       Paths.get(provenance.userWorkDirectoryPath).resolve(usersErrorDirectory).toFile().mkdir();
       Files.move(taskDir.toPath(),
-          Paths.get(provenance.userWorkDirectoryPath).resolve(usersErrorDirectory).resolve(taskDir.getName()));
+          Paths.get(provenance.userWorkDirectoryPath).resolve(usersErrorDirectory)
+              .resolve(taskDir.getName()));
     } catch (IOException e) {
       LOG.error("Cannot move task to user intervention: %s".formatted(provenance.originPath), e);
       moveToSystemIntervention(taskDir, e.getMessage());

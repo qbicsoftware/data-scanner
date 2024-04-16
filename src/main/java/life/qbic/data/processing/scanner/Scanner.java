@@ -41,7 +41,6 @@ public class Scanner extends Thread {
   private final HashSet<Path> userProcessDirectories = new HashSet<>();
   private final ConcurrentRegistrationQueue registrationQueue;
   private final HashSet<RegistrationRequest> submittedRequests = new HashSet<>();
-  private final Path usersErrorDirectory;
 
   public Scanner(ScannerConfiguration scannerConfiguration,
       ConcurrentRegistrationQueue registrationQueue, GlobalConfig globalConfig) {
@@ -53,8 +52,7 @@ public class Scanner extends Thread {
     }
     this.scanInterval = scannerConfiguration.scanInterval();
     this.registrationQueue = Objects.requireNonNull(registrationQueue,
-        "eventQueue must not be null");
-    this.usersErrorDirectory = globalConfig.usersErrorDirectory();
+        "registrationQueue must not be null");
   }
 
   @Override
@@ -97,15 +95,11 @@ public class Scanner extends Thread {
             Collection::stream).toList();
   }
 
-  private boolean isNotErrorFolder(File folder) {
-    return !folder.getName().equals(usersErrorDirectory.getFileName());
-  }
-
   private List<RegistrationRequest> createRequests(File[] files, Path userDirectory) {
     if (files == null || files.length == 0) {
       return new ArrayList<>();
     }
-    return Arrays.stream(files).filter(file -> !file.isHidden()).filter(this::isNotErrorFolder)
+    return Arrays.stream(files).filter(file -> !file.isHidden())
         .map(file -> createRequest(file, userDirectory)).toList();
   }
 
