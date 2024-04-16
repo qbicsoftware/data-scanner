@@ -49,7 +49,7 @@ public class ConcurrentRegistrationQueue {
       }
     }
     queue.add(request);
-    notify();
+    notifyAll();
   }
 
   /**
