@@ -11,9 +11,9 @@ public class RegistrationWorkersConfig {
 
   private final Path targetDirectory;
 
-  public RegistrationWorkersConfig(int amountOfWorkers, String workingDirectory, String targetDirectory) {
-    if (amountOfWorkers < 1) {
-      throw new IllegalArgumentException("Number of workers must be greater than 0");
+  public RegistrationWorkersConfig(int threads, String workingDirectory, String targetDirectory) {
+    if (threads < 1) {
+      throw new IllegalArgumentException("Number of threads must be greater than 0");
     }
     Path directory = Paths.get(workingDirectory);
     if (!directory.toFile().exists()) {
@@ -24,7 +24,7 @@ public class RegistrationWorkersConfig {
       throw new IllegalArgumentException("Target directory " + targetDirectory + " does not exist");
     }
     this.workingDirectory = directory;
-    this.amountOfWorkers = amountOfWorkers;
+    this.amountOfWorkers = threads;
     this.targetDirectory = targetDirectoryPath;
   }
 
