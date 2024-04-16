@@ -175,9 +175,9 @@ public class EvaluationRequest extends Thread {
       var errorFile = taskDir.toPath().resolve("error.txt").toFile();
       errorFile.createNewFile();
       Files.writeString(errorFile.toPath(), reason);
-      Paths.get(provenance.userPath).resolve(usersErrorDirectory).toFile().mkdir();
+      Paths.get(provenance.userWorkDirectoryPath).resolve(usersErrorDirectory).toFile().mkdir();
       Files.move(taskDir.toPath(),
-          Paths.get(provenance.userPath).resolve(usersErrorDirectory).resolve(taskDir.getName()));
+          Paths.get(provenance.userWorkDirectoryPath).resolve(usersErrorDirectory).resolve(taskDir.getName()));
     } catch (IOException e) {
       LOG.error("Cannot move task to user intervention: %s".formatted(provenance.originPath), e);
       moveToSystemIntervention(taskDir, e.getMessage());

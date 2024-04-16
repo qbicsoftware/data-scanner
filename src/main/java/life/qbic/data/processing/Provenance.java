@@ -33,8 +33,11 @@ public class Provenance {
   @JsonProperty("origin")
   public String originPath;
 
+  /**
+   *
+   */
   @JsonProperty("user")
-  public String userPath;
+  public String userWorkDirectoryPath;
 
   /**
    * The current location identifier of the dataset

@@ -86,7 +86,7 @@ public class ProcessRegistrationRequest extends Thread {
     provenance.originPath = request.origin().toString();
     provenance.history = new ArrayList<>();
     provenance.history.add(newLocation.toString());
-    provenance.userPath = String.valueOf(request.userPath());
+    provenance.userWorkDirectoryPath = String.valueOf(request.userPath());
     ObjectMapper mapper = new ObjectMapper();
     mapper.writerWithDefaultPrettyPrinter()
         .writeValue(taskDir.resolve("provenance.json").toFile(), provenance);
