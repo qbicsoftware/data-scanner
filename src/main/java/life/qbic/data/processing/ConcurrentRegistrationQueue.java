@@ -5,17 +5,16 @@ import java.util.concurrent.LinkedBlockingQueue;
 import life.qbic.data.processing.registration.RegistrationRequest;
 
 /**
- * <b><class short description - 1 Line!></b>
+ * <b>Concurrent Registration Queue</b>
+ * <p>
+ * Simple FIFO queue, that allows for backpressure.
  *
- * <p><More detailed description - When to use, what it solves, etc.></p>
- *
- * @since <version tag>
+ * @since 1.0.0
  */
 public class ConcurrentRegistrationQueue {
 
-  private final Queue<RegistrationRequest> queue = new LinkedBlockingQueue<>();
-
   private static final int DEFAULT_CAPACITY = 10;
+  private final Queue<RegistrationRequest> queue = new LinkedBlockingQueue<>();
   private final int capacity;
 
   public ConcurrentRegistrationQueue() {
@@ -26,6 +25,15 @@ public class ConcurrentRegistrationQueue {
     this.capacity = capacity;
   }
 
+  /**
+   * Adds a new {@link RegistrationRequest} to the registration queue.
+   * <p>
+   * If the queue has reached its maximal capacity, the calling thread is put into the wait state,
+   * until the queue's load is reduced below its configured maximal capacity.
+   *
+   * @param request the request to add to the registration queue
+   * @since 1.0.0
+   */
   public synchronized void add(RegistrationRequest request) {
     while (queue.size() >= capacity) {
       try {
@@ -38,6 +46,15 @@ public class ConcurrentRegistrationQueue {
     notify();
   }
 
+  /**
+   * Requests the next {@link RegistrationRequest} in the queue.
+   * <p>
+   * If the queue is empty, the calling thread is put into the wait state (via
+   * {@link Object#wait()}) until it gets notified again when a new task is available in the queue.
+   *
+   * @return the next registration request available.
+   * @since 1.0.0
+   */
   public synchronized RegistrationRequest poll() {
     while (queue.isEmpty()) {
       try {
