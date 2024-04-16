@@ -23,10 +23,13 @@ import life.qbic.data.processing.Provenance.ProvenanceException;
 import org.apache.logging.log4j.Logger;
 
 /**
- * <b>Evaluation Request</b>
+ * <b>Evaluation Request - Last process</b>
  *
- * <p>Currently only validates the presence of a QBiC measurement ID in the dataset root
+ * <p>Validates the presence of a QBiC measurement ID in the dataset root
  * folder.</p>
+ * If a valid measurement ID is found, the process updates the provenance file with the ID and moves
+ * the dataset to the openBIS ETL. After successful transfer, an openBIS marker-file is created, to integrate
+ * the dataset registration with openBIS ETL.
  * <p>
  * If none is present, or the identifier does not match the requirements, it is moved back to the
  * users error folder.
@@ -147,6 +150,12 @@ public class EvaluationRequest extends Thread {
     var measurementIdResult = matcher.results().map(MatchResult::group).findFirst();
     if (measurementIdResult.isPresent()) {
       moveToTargetDir(taskDir);
+      try {
+        createMarkerFile(targetDirectory, taskDir.getName());
+      } catch (IOException e) {
+        LOG.error("Could not create marker file: %s".formatted(taskDir.getAbsolutePath()), e);
+        moveToSystemIntervention(taskDir, e.getMessage());
+      }
       return;
     }
     var errorMessage = ErrorSummary.createSimple(taskDir.getName(), dataset.getName(), "Missing QBiC measurement ID",
@@ -155,6 +164,11 @@ public class EvaluationRequest extends Thread {
         "Missing measurement identifier: no known measurement id was found in the content of directory '%s' in task '%s'".formatted(
             dataset.getName(), taskDir.getName()));
     moveBackToOrigin(taskDir, provenance, errorMessage.toString());
+  }
+
+  private boolean createMarkerFile(Path targetDirectory, String name) throws IOException {
+    Path markerFileName = Paths.get(".MARKER_is_finished_" + name);
+    return targetDirectory.resolve(markerFileName).toFile().createNewFile();
   }
 
   private Optional<File> findDataset(File taskDir) {
