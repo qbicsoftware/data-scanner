@@ -40,9 +40,9 @@ public class Provenance {
   public String userWorkDirectoryPath;
 
   /**
-   * The current location identifier of the dataset
+   * A list of ordered processing folder stops the dataset has traversed and passed successfully.
    * <p>
-   * Can be a file path when operating on file system level
+   * The time of processing is ordered from oldest to latest.
    */
   @JsonProperty("history")
   public List<String> history;
