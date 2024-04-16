@@ -94,7 +94,7 @@ public class ProcessingRequest extends Thread {
       }
       active.set(false);
       if (terminated.get()) {
-        LOG.warn("Thread %s terminated".formatted(Thread.currentThread().getName()));
+        LOG.warn("Thread {} terminated", Thread.currentThread().getName());
         break;
       }
     }
@@ -113,7 +113,7 @@ public class ProcessingRequest extends Thread {
 
     Optional<File> provenanceFileSearch = findProvenanceFile(taskDirContent);
     if (provenanceFileSearch.isEmpty()) {
-      LOG.error("Task %s has no provenance file".formatted(taskDir.getAbsolutePath()));
+      LOG.error("Task {} has no provenance file", taskDir.getAbsolutePath());
       moveToSystemIntervention(taskDir, "No provenance file provided");
       return;
     }
@@ -138,13 +138,13 @@ public class ProcessingRequest extends Thread {
           try {
             writeProvenance(provenanceFileSearch.get(), finalProvenance);
           } catch (IOException e) {
-            LOG.error("Could not write provenance file " + file.getAbsolutePath(), e);
+            LOG.error("Could not write provenance file {}", file.getAbsolutePath(), e);
             moveToSystemIntervention(taskDir, "Writing provenance file failed");
           }
           try {
             moveToTargetFolder(taskDir);
           } catch (IOException e) {
-            LOG.error("Could not move task %s to target location".formatted(file.getAbsolutePath()),
+            LOG.error("Could not move task {} to target location", file.getAbsolutePath(),
                 e);
             moveToSystemIntervention(taskDir, "Writing task directory failed");
           }
@@ -175,10 +175,10 @@ public class ProcessingRequest extends Thread {
 
   private boolean checkForEmpty(File taskDir, List<File> taskDirContent) {
     if (taskDirContent.isEmpty()) {
-      LOG.error("Task %s has no files", taskDir.getAbsolutePath());
+      LOG.error("Task {} has no files", taskDir.getAbsolutePath());
       clearTask(taskDir);
       taskDir.delete();
-      LOG.info("Empty task %s deleted", taskDir.getAbsolutePath());
+      LOG.info("Empty task {} deleted", taskDir.getAbsolutePath());
       return true;
     }
     return false;

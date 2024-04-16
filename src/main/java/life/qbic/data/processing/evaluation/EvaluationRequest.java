@@ -126,7 +126,7 @@ public class EvaluationRequest extends Thread {
   private void evaluateDirectory(File taskDir) {
     var provenanceSearch = Provenance.findProvenance(taskDir.toPath());
     if (provenanceSearch.isEmpty()) {
-      LOG.error("No provenance file found: %s".formatted(taskDir.getAbsolutePath()));
+      LOG.error("No provenance file found: {}", taskDir.getAbsolutePath());
       moveToSystemIntervention(taskDir, "Provenance file was not found");
       return;
     }
@@ -135,14 +135,14 @@ public class EvaluationRequest extends Thread {
     try {
       provenance = Provenance.parse(provenanceSearch.get().toPath());
     } catch (ProvenanceException e) {
-      LOG.error("Could not parse provenance file: %s".formatted(taskDir.getAbsolutePath()), e);
+      LOG.error("Could not parse provenance file: {}}", taskDir.getAbsolutePath(), e);
       moveToSystemIntervention(taskDir, e.getMessage());
       return;
     }
 
     var datasetSearch = findDataset(taskDir);
     if (datasetSearch.isEmpty()) {
-      LOG.error("No dataset found: %s".formatted(taskDir.getAbsolutePath()));
+      LOG.error("No dataset found: {}", taskDir.getAbsolutePath());
       moveBackToOrigin(taskDir, provenance, "No dataset directory found.");
       return;
     }
@@ -155,14 +155,14 @@ public class EvaluationRequest extends Thread {
       try {
         updateProvenanceFile(provenanceSearch.get(), provenance);
       } catch (IOException e) {
-        LOG.error("Could not update provenance file: %s".formatted(taskDir.getAbsolutePath()), e);
+        LOG.error("Could not update provenance file: {}", taskDir.getAbsolutePath(), e);
         moveToSystemIntervention(taskDir, e.getMessage());
       }
       moveToTargetDir(taskDir);
       try {
         createMarkerFile(targetDirectory, taskDir.getName());
       } catch (IOException e) {
-        LOG.error("Could not create marker file: %s".formatted(taskDir.getAbsolutePath()), e);
+        LOG.error("Could not create marker file: {}", taskDir.getAbsolutePath(), e);
         moveToSystemIntervention(taskDir, e.getMessage());
       }
       return;
@@ -170,8 +170,7 @@ public class EvaluationRequest extends Thread {
     var errorMessage = ErrorSummary.createSimple(taskDir.getName(), dataset.getName(), "Missing QBiC measurement ID",
         "For a successful registration please provide the pre-registered QBiC measurement ID");
     LOG.error(
-        "Missing measurement identifier: no known measurement id was found in the content of directory '%s' in task '%s'".formatted(
-            dataset.getName(), taskDir.getName()));
+        "Missing measurement identifier: no known measurement id was found in the content of directory '{}' in task '{}'", dataset.getName(), taskDir.getName());
     moveBackToOrigin(taskDir, provenance, errorMessage.toString());
   }
 

@@ -57,7 +57,7 @@ public class Scanner extends Thread {
 
   @Override
   public void run() {
-    log.info("Started scanning '%s'".formatted(scannerPath));
+    log.info("Started scanning '{}'", scannerPath);
     while (!Thread.interrupted()) {
       try {
         var userFolderIterator = Arrays.stream(
@@ -77,7 +77,7 @@ public class Scanner extends Thread {
           }
           registrationQueue.add(request);
           submittedRequests.add(request);
-          log.info("New registration requested: %s".formatted(request));
+          log.info("New registration requested: {}", request);
         }
         removePathZombies();
         Thread.sleep(scanInterval);
@@ -85,7 +85,7 @@ public class Scanner extends Thread {
         interrupt();
       }
     }
-    log.info("Stopped scanning '%s'".formatted(scannerPath));
+    log.info("Stopped scanning '{}'", scannerPath);
   }
 
   private List<RegistrationRequest> detectDataForRegistration() {
@@ -125,7 +125,7 @@ public class Scanner extends Thread {
 
   private void addRegistrationDirectory(Path path) {
     if (userProcessDirectories.add(path)) {
-      log.info("New user process directory found: '%s'".formatted(path.toString()));
+      log.info("New user process directory found: '{}'", path.toString());
     }
   }
 
@@ -136,6 +136,6 @@ public class Scanner extends Thread {
 
   @Override
   public void interrupt() {
-    log.info("Interrupted scanning '%s'".formatted(scannerPath));
+    log.info("Interrupted scanning '{}'", scannerPath);
   }
 }

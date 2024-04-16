@@ -42,21 +42,21 @@ public class Application {
     var requestQueue = new ConcurrentRegistrationQueue();
     var scannerThread = new Scanner(scannerConfiguration, requestQueue, globalConfig);
 
-    log.info("Registering %s registration workers...".formatted(registrationWorkersConfig.amountOfWorkers()));
+    log.info("Registering {} registration workers...", registrationWorkersConfig.amountOfWorkers());
 
     List<ProcessRegistrationRequest> registrationWorkers = new LinkedList<>();
     for (int i=0; i<registrationWorkersConfig.amountOfWorkers(); i++) {
       registrationWorkers.add(new ProcessRegistrationRequest(requestQueue, registrationConfiguration));
     }
 
-    log.info("Registering %s processing workers...".formatted(processingWorkersConfig.threads()));
+    log.info("Registering {} processing workers...", processingWorkersConfig.threads());
 
     List<ProcessingRequest> processingWorkers = new LinkedList<>();
     for (int i=0; i<processingWorkersConfig.threads(); i++) {
       processingWorkers.add(new ProcessingRequest(processingConfiguration));
     }
 
-    log.info("Registering %s evaluation workers...".formatted(evaluationWorkersConfig.threads()));
+    log.info("Registering {} evaluation workers...", evaluationWorkersConfig.threads());
 
     List<EvaluationRequest> evaluationWorkers = new LinkedList<>();
     for (int i=0; i<evaluationWorkersConfig.threads(); i++) {
