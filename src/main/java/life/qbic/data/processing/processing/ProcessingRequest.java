@@ -64,7 +64,7 @@ public class ProcessingRequest extends Thread {
     return threadNumber++;
   }
 
-  private static boolean push(String taskId) {
+  private boolean push(String taskId) {
     LOCK.lock();
     boolean notActiveYet;
     try {
@@ -80,9 +80,11 @@ public class ProcessingRequest extends Thread {
     while (true) {
       active.set(true);
       for (File taskDir : tasks()) {
-        if (push(taskDir.getAbsolutePath())) {
+        if (push(taskDir.getAbsolutePath()) && taskDir.exists()) {
           LOG.info("Registering task " + taskDir.getAbsolutePath());
           processFile(taskDir);
+          clearTask(taskDir);
+        } else {
           clearTask(taskDir);
         }
       }
@@ -105,7 +107,7 @@ public class ProcessingRequest extends Thread {
    * @since
    */
   private void processFile(File taskDir) {
-    var taskDirContent = Arrays.stream(Objects.requireNonNull(taskDir.listFiles())).toList();
+    var taskDirContent = Arrays.stream(Objects.requireNonNull(taskDir.listFiles(), "Task dir must not be null: " + taskDir)).toList();
 
     if (checkForEmpty(taskDir, taskDirContent)) {
       return;
@@ -185,6 +187,7 @@ public class ProcessingRequest extends Thread {
   }
 
   private void moveToTargetFolder(File taskDir) throws IOException {
+    LOG.info("Moving task {} to target folder", taskDir.getAbsolutePath());
     Files.move(taskDir.toPath(), targetDirectory.resolve(taskDir.getName()));
   }
 

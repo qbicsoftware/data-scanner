@@ -1,6 +1,7 @@
 package life.qbic.data.processing;
 
 import java.nio.file.Path;
+import java.util.Arrays;
 import life.qbic.data.processing.config.EvaluationWorkersConfig;
 import life.qbic.data.processing.config.ProcessingWorkersConfig;
 import life.qbic.data.processing.config.RegistrationWorkersConfig;
@@ -50,17 +51,17 @@ class AppConfig {
   EvaluationWorkersConfig evaluationWorkersConfig(
       @Value("${evaluations.threads}") int amountOfWorkers,
       @Value("${evaluation.working.dir}") String workingDirectory,
-      @Value("${evaluation.target.dir}") String targetDirectory,
+      @Value("${evaluation.target.dirs}") String[] targetDirectory,
       @Value("${evaluation.measurement-id.pattern}") String measurementIdPattern) {
-    return new EvaluationWorkersConfig(amountOfWorkers, workingDirectory, targetDirectory,
-        measurementIdPattern);
+    return new EvaluationWorkersConfig(amountOfWorkers, workingDirectory,
+        measurementIdPattern, Arrays.stream(targetDirectory).toList());
   }
 
   @Bean
   EvaluationConfiguration evaluationConfiguration(EvaluationWorkersConfig evaluationWorkersConfig,
       GlobalConfig globalConfig) {
     return new EvaluationConfiguration(evaluationWorkersConfig.workingDirectory().toString(),
-        evaluationWorkersConfig.targetDirectory().toString(),
+        evaluationWorkersConfig.targetDirectories(),
         evaluationWorkersConfig.measurementIdPattern().toString(), globalConfig);
   }
 
