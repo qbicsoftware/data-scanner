@@ -104,7 +104,8 @@ Here is an example of the provenance file:
 }
 ```
 
-> [!NOTE] The following properties can be expected after all process steps have been executed:
+> [!NOTE] 
+> The following properties can be expected after all process steps have been executed:
 >
 > `origin`: from which path the dataset has been detected during scanning
 >
