@@ -4,7 +4,6 @@ import static org.apache.logging.log4j.LogManager.getLogger;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,7 +33,7 @@ import org.apache.logging.log4j.Logger;
 public class Scanner extends Thread {
 
   private static final Logger log = getLogger(Scanner.class);
-  private static final Path REGISTRATION_PATH = Paths.get("registration");
+  private final Path registrationPath;
 
   private final Path scannerPath;
   private final int scanInterval;
@@ -53,6 +52,7 @@ public class Scanner extends Thread {
     this.scanInterval = scannerConfiguration.scanInterval();
     this.registrationQueue = Objects.requireNonNull(registrationQueue,
         "registrationQueue must not be null");
+    this.registrationPath = globalConfig.usersDirectoryRegistration();
   }
 
   @Override
@@ -130,7 +130,7 @@ public class Scanner extends Thread {
   }
 
   public Optional<Path> fetchRegistrationDirectory(Path userDirectory) {
-    Path resolvedPath = userDirectory.resolve(REGISTRATION_PATH);
+    Path resolvedPath = userDirectory.resolve(registrationPath);
     return Optional.ofNullable(resolvedPath.toFile().exists() ? resolvedPath : null);
   }
 

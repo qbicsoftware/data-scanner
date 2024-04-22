@@ -81,8 +81,9 @@ class AppConfig {
 
   @Bean
   GlobalConfig globalConfig(
-      @Value("${users.error.directory.name}") String usersErrorDirectoryName) {
-    return new GlobalConfig(usersErrorDirectoryName);
+      @Value("${users.error.directory.name}") String usersErrorDirectoryName,
+      @Value("${users.registration.directory.name}") String usersRegistrationDirectoryName) {
+    return new GlobalConfig(usersErrorDirectoryName, usersRegistrationDirectoryName);
   }
 
 }
