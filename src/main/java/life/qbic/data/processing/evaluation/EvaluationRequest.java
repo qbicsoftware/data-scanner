@@ -21,16 +21,16 @@ import java.util.regex.Pattern;
 import life.qbic.data.processing.ErrorSummary;
 import life.qbic.data.processing.Provenance;
 import life.qbic.data.processing.Provenance.ProvenanceException;
+import life.qbic.data.processing.config.RoundRobinDraw;
 import org.apache.logging.log4j.Logger;
 
 /**
  * <b>Evaluation Request - Last process</b>
  *
  * <p>Validates the presence of a QBiC measurement ID in the dataset root
- * folder.</p>
- * If a valid measurement ID is found, the process updates the provenance file with the ID and moves
- * the dataset to the openBIS ETL. After successful transfer, an openBIS marker-file is created, to integrate
- * the dataset registration with openBIS ETL.
+ * folder.</p> If a valid measurement ID is found, the process updates the provenance file with the
+ * ID and moves the dataset to the openBIS ETL. After successful transfer, an openBIS marker-file is
+ * created, to integrate the dataset registration with openBIS ETL.
  * <p>
  * If none is present, or the identifier does not match the requirements, it is moved back to the
  * users error folder.
@@ -49,15 +49,16 @@ public class EvaluationRequest extends Thread {
   private final AtomicBoolean active = new AtomicBoolean(false);
   private final AtomicBoolean terminated = new AtomicBoolean(false);
   private final Path workingDirectory;
-  private final Path targetDirectory;
   private final Pattern measurementIdPattern;
   private final Path usersErrorDirectory;
+  private final RoundRobinDraw<Path> targetDirectories;
+  private Path assignedTargetDirectory;
 
-  public EvaluationRequest(Path workingDirectory, Path targetDirectory,
+  public EvaluationRequest(Path workingDirectory, RoundRobinDraw<Path> targetDirectories,
       Pattern measurementIdPattern, Path usersErrorDirectory) {
     this.setName(THREAD_NAME.formatted(nextThreadNumber()));
     this.workingDirectory = workingDirectory;
-    this.targetDirectory = targetDirectory;
+    this.targetDirectories = targetDirectories;
     this.measurementIdPattern = measurementIdPattern;
     if (!workingDirectory.resolve(INTERVENTION_DIRECTORY).toFile().mkdir()
         && !workingDirectory.resolve(
@@ -70,7 +71,7 @@ public class EvaluationRequest extends Thread {
   }
 
   public EvaluationRequest(EvaluationConfiguration evaluationConfiguration) {
-    this(evaluationConfiguration.workingDirectory(), evaluationConfiguration.targetDirectory(),
+    this(evaluationConfiguration.workingDirectory(), evaluationConfiguration.targetDirectories(),
         evaluationConfiguration.measurementIdPattern(),
         evaluationConfiguration.usersErrorDirectory());
   }
@@ -95,7 +96,8 @@ public class EvaluationRequest extends Thread {
     while (true) {
       active.set(true);
       for (File taskDir : tasks()) {
-        if (push(taskDir.getAbsolutePath())) {
+        if (push(taskDir.getAbsolutePath()) && taskDir.exists()) {
+          assignedTargetDirectory = getAssignedTargetDir();
           evaluateDirectory(taskDir);
           removeTask(taskDir);
         }
@@ -112,6 +114,10 @@ public class EvaluationRequest extends Thread {
         // via its interrupt() method
       }
     }
+  }
+
+  private Path getAssignedTargetDir() {
+    return targetDirectories.next();
   }
 
   private void removeTask(File taskDir) {
@@ -160,17 +166,19 @@ public class EvaluationRequest extends Thread {
       }
       moveToTargetDir(taskDir);
       try {
-        createMarkerFile(targetDirectory, taskDir.getName());
+        createMarkerFile(assignedTargetDirectory, taskDir.getName());
       } catch (IOException e) {
         LOG.error("Could not create marker file: {}", taskDir.getAbsolutePath(), e);
         moveToSystemIntervention(taskDir, e.getMessage());
       }
       return;
     }
-    var errorMessage = ErrorSummary.createSimple(taskDir.getName(), dataset.getName(), "Missing QBiC measurement ID",
+    var errorMessage = ErrorSummary.createSimple(taskDir.getName(), dataset.getName(),
+        "Missing QBiC measurement ID",
         "For a successful registration please provide the pre-registered QBiC measurement ID");
     LOG.error(
-        "Missing measurement identifier: no known measurement id was found in the content of directory '{}' in task '{}'", dataset.getName(), taskDir.getName());
+        "Missing measurement identifier: no known measurement id was found in the content of directory '{}' in task '{}'",
+        dataset.getName(), taskDir.getName());
     moveBackToOrigin(taskDir, provenance, errorMessage.toString());
   }
 
@@ -217,13 +225,13 @@ public class EvaluationRequest extends Thread {
 
   private void moveToTargetDir(File taskDir) {
     LOG.info(
-        "Moving %s to target directory %s".formatted(taskDir.getAbsolutePath(), targetDirectory));
+        "Moving %s to target directory %s".formatted(taskDir.getAbsolutePath(), assignedTargetDirectory));
     try {
-      Files.move(taskDir.toPath(), targetDirectory.resolve(taskDir.getName()));
+      Files.move(taskDir.toPath(), assignedTargetDirectory.resolve(taskDir.getName()));
     } catch (IOException e) {
-      LOG.error("Cannot move task to target directory: %s".formatted(targetDirectory), e);
+      LOG.error("Cannot move task to target directory: %s".formatted(targetDirectories), e);
       moveToSystemIntervention(taskDir,
-          "Cannot move task to target directory: %s".formatted(targetDirectory));
+          "Cannot move task to target directory: %s".formatted(targetDirectories));
     }
 
   }
