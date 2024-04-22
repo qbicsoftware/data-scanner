@@ -233,8 +233,15 @@ finished tasks are moved to after successful operation.
 # ---------------------------------
 evaluations.threads=2
 evaluation.working.dir=${EVALUATION_DIR}
-evaluation.target.dir=${OPENBIS_ETL_DIR}
+# Define one or more target directories here
+# Example single target dir:
+#    evaluation.target.dirs=/my/example/target/dir
+# Example multiple target dir:
+#   evaluation.target.dirs=/my/example/target/dir1,/my/example/target/dir2,/my/example/target/dir3
+evaluation.target.dirs=${OPENBIS_ETL_DIRS}
 evaluation.measurement-id.pattern=^(MS|NGS)Q[A-Z0-9]{4}[0-9]{3}[A-Z0-9]{2}-[0-9]*
 ```
 
-
+> [!NOTE]
+> You can define multiple target directories for this process! You just have to provide a `,`-separated list
+> of target directory paths. The implementation will assign the target directories based on a round-robin draw.
