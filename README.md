@@ -104,7 +104,7 @@ Here is an example of the provenance file:
 }
 ```
 
-> [!NOTE] 
+> [!NOTE]
 > The following properties can be expected after all process steps have been executed:
 >
 > `origin`: from which path the dataset has been detected during scanning
@@ -130,7 +130,7 @@ name and the suffix `_dataset` (see example below).
 > Transforming every dataset as a folder makes it easier to process the dataset in (future)
 > downstream processes (e.g. quality control, checksum validation, etc).
 > We create a harmonised structure of the task directory content, that can be relied on:
-> 
+>
 > ```
 > |- 74c5d26f-b756-42c3-b6f4-2b4825670a2d  // directory
 >       |- a_file.txt_dataset  // dataset folder
@@ -138,16 +138,103 @@ name and the suffix `_dataset` (see example below).
 >       |- provenance.json  // file
 > ```
 
-
-
 ### Evaluation
+
+Last but not least, this step looks for any present QBiC measurement ID in the dataset name. If none
+is given, the registration cannot be executed.
+
+In this case the process moves the task directory into the user's home error folder. After the user
+has
+provided a valid QBiC measurement id, they can move the dataset into registration again.
 
 ## Configuration
 
+### Global settings
+
+```properties
+#------------------------
+# Global settings
+#------------------------
+# Directory name that will be used for the manual intervention directory
+# Created in the users' home folders
+# e.g. /home/<user1>/error
+users.error.directory.name=error
+# Directory name that will be used for the detecting dropped datasets
+# Needs to be present in the users' home folders
+# e.g. /home/<user1>/registration
+users.registration.directory.name=registration
+```
+
+Configure the names of the two application directories for error handling and registration.
+
+> [!NOTE]
+> The `registration` folder needs to be present, the application is not creating it automatically,
+> no
+> prevent accidental dataset overwrite.
+
 ### Scanner step config
+
+```properties
+#--------------------------------------
+# Settings for the data scanning thread
+#--------------------------------------
+# Path to the directory that contains all user directories
+# e.g. /home in Linux or /Users in macOS
+scanner.directory=${SCANNER_DIR:/home}
+# The time interval (milliseconds) the scanner thread iterates through the scanner directory
+# Value must be an integer > 0
+scanner.interval=1000
+```
+
+Sets the applications top level scanning directory and considers every folder in it as an own
+user directory.
+
+The scanner interval is set to 1 second by default is not yet supposed to be configured via
+environment variables (if required, override it with command line arguments).
 
 ### Registration step config
 
+Sets the number of threads per process, its working directory and the target directory, to where
+finished tasks are moved to after successful operation.
 
+```properties
+#----------------
+# Settings for the registration worker threads
+#----------------
+registration.threads=2
+registration.working.dir=${WORKING_DIR:}
+registration.target.dir=${PROCESSING_DIR:}
+```
+
+### Processing step config
+
+Sets the number of threads per process, its working directory and the target directory, to where
+finished tasks are moved to after successful operation. 
+
+```properties
+#------------------------------------
+# Settings for the 1. processing step
+# Proper packaging and provenance data, some simple checks
+#------------------------------------
+processing.threads=2
+processing.working.dir=${PROCESSING_DIR}
+processing.target.dir=${EVALUATION_DIR}
+```
+
+### Evaluation step config
+
+Sets the number of threads per process, its working directory and the target directory, to where
+finished tasks are moved to after successful operation.
+
+```properties
+#----------------------------------
+# Setting for the 2. processing step:
+# Measurement ID evaluation
+# ---------------------------------
+evaluations.threads=2
+evaluation.working.dir=${EVALUATION_DIR}
+evaluation.target.dir=${OPENBIS_ETL_DIR}
+evaluation.measurement-id.pattern=^(MS|NGS)Q[A-Z0-9]{4}[0-9]{3}[A-Z0-9]{2}-[0-9]*
+```
 
 
