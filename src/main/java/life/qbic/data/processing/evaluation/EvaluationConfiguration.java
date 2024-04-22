@@ -2,8 +2,10 @@ package life.qbic.data.processing.evaluation;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collection;
 import java.util.regex.Pattern;
 import life.qbic.data.processing.GlobalConfig;
+import life.qbic.data.processing.config.RoundRobinDraw;
 
 /**
  * <b>Evaluation Configuration</b>
@@ -15,21 +17,24 @@ import life.qbic.data.processing.GlobalConfig;
 public class EvaluationConfiguration {
 
   private final Path workingDirectory;
-  private final Path targetDirectory;
+  private final Collection<Path> targetDirectories;
   private final Pattern measurementIdPattern;
   private final Path usersErrorDirectory;
+  private final RoundRobinDraw<Path> targetDirectoriesRoundRobinDraw;
 
-  public EvaluationConfiguration(String workingDirectory, String targetDirectory,
+  public EvaluationConfiguration(String workingDirectory, Collection<Path> targetDirectories,
       String measurementIdPattern,
       GlobalConfig globalConfig) {
     this.workingDirectory = Paths.get(workingDirectory);
     if (!this.workingDirectory.toFile().exists()) {
       throw new IllegalArgumentException("Evaluation worker directory does not exist");
     }
-    this.targetDirectory = Paths.get(targetDirectory);
-    if (!this.targetDirectory.toFile().exists()) {
-      throw new IllegalArgumentException("Evaluation target directory does not exist");
-    }
+    this.targetDirectories = targetDirectories.stream().toList();
+    this.targetDirectories.stream().filter(path -> !path.toFile().exists()).forEach(path -> {
+      throw new IllegalArgumentException(
+          "Evaluation target directory '%s' does not exist".formatted(path));
+    });
+    this.targetDirectoriesRoundRobinDraw = RoundRobinDraw.create(targetDirectories);
     if (measurementIdPattern.isBlank()) {
       throw new IllegalArgumentException("Measurement id pattern cannot be blank");
     }
@@ -41,8 +46,8 @@ public class EvaluationConfiguration {
     return workingDirectory;
   }
 
-  public Path targetDirectory() {
-    return targetDirectory;
+  public RoundRobinDraw<Path> targetDirectories() {
+    return targetDirectoriesRoundRobinDraw;
   }
 
   public Pattern measurementIdPattern() {

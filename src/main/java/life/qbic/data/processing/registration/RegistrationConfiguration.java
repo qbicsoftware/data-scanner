@@ -18,7 +18,7 @@ public class RegistrationConfiguration {
     if (!workingDirectory().toFile().isDirectory()) {
       throw new IllegalArgumentException(targetDirectory + " is not a directory");
     }
-    this.targetDirectory = Paths.get(Objects.requireNonNull(targetDirectory, "targetDirectory must not be null"));
+    this.targetDirectory = Paths.get(Objects.requireNonNull(targetDirectory, "targetDirectories must not be null"));
     if (!targetDirectory().toFile().exists()) {
       throw new IllegalArgumentException(targetDirectory + " does not exist");
     }
