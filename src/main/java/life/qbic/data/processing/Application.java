@@ -75,6 +75,8 @@ public class Application {
       registrationWorkers.forEach(Thread::interrupt);
       processingWorkers.forEach(Thread::interrupt);
       evaluationWorkers.forEach(Thread::interrupt);
+      // if every worker thread has shut down successfully, the application can exit with status code 0
+      Runtime.getRuntime().halt(0);
     }, "Shutdown-thread"));
 
   }
