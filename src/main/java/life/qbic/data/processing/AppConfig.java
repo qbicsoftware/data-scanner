@@ -28,8 +28,8 @@ class AppConfig {
   @Bean
   ScannerConfiguration scannerConfiguration(
       @Value("${scanner.directory}") String scannerDirectory,
-      @Value("${scanner.interval}") int interval) {
-    return new ScannerConfiguration(scannerDirectory, interval);
+      @Value("${scanner.interval}") int interval, @Value("${scanner.ignore}") String[] ignore) {
+    return new ScannerConfiguration(scannerDirectory, interval, ignore);
   }
 
   @Bean
