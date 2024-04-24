@@ -218,7 +218,7 @@ public class EvaluationRequest extends Thread {
           Paths.get(provenance.userWorkDirectoryPath).resolve(usersErrorDirectory)
               .resolve(taskDir.getName()));
     } catch (IOException e) {
-      LOG.error("Cannot move task to user intervention: %s".formatted(provenance.originPath), e);
+      LOG.error("Cannot move task to user intervention: %s".formatted(Paths.get(provenance.userWorkDirectoryPath).resolve(usersErrorDirectory)), e);
       moveToSystemIntervention(taskDir, e.getMessage());
     }
   }
