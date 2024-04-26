@@ -36,15 +36,18 @@ class AppConfig {
   RegistrationWorkersConfig registrationWorkersConfig(
       @Value("${registration.threads}") int amountOfWorkers,
       @Value("${registration.working.dir}") String workingDirectory,
-      @Value("${registration.target.dir}") String targetDirectory) {
-    return new RegistrationWorkersConfig(amountOfWorkers, workingDirectory, targetDirectory);
+      @Value("${registration.target.dir}") String targetDirectory,
+      @Value("${registration.metadata.filename}") String metadataFileName) {
+    return new RegistrationWorkersConfig(amountOfWorkers, workingDirectory, targetDirectory,
+        metadataFileName);
   }
 
   @Bean
   RegistrationConfiguration registrationConfiguration(
       RegistrationWorkersConfig registrationWorkersConfig) {
     return new RegistrationConfiguration(registrationWorkersConfig.workingDirectory().toString(),
-        registrationWorkersConfig.targetDirectory().toString());
+        registrationWorkersConfig.targetDirectory().toString(),
+        registrationWorkersConfig.metadataFileName());
   }
 
   @Bean
