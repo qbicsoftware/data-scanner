@@ -18,6 +18,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 import life.qbic.data.processing.ErrorSummary;
 import life.qbic.data.processing.Provenance;
 import life.qbic.data.processing.Provenance.ProvenanceException;
@@ -146,17 +147,8 @@ public class EvaluationRequest extends Thread {
       return;
     }
 
-    var datasetSearch = findDataset(taskDir);
-    if (datasetSearch.isEmpty()) {
-      LOG.error("No dataset found: {}", taskDir.getAbsolutePath());
-      moveBackToOrigin(taskDir, provenance, "No dataset directory found.");
-      return;
-    }
-    var dataset = datasetSearch.get();
-    Matcher matcher = measurementIdPattern.matcher(dataset.getName());
-    var measurementIdResult = matcher.results().map(MatchResult::group).findFirst();
+    var measurementIdResult = provenance.qbicMeasurementID == null || provenance.qbicMeasurementID.isBlank() ? Optional.empty() : Optional.of(provenance.qbicMeasurementID);
     if (measurementIdResult.isPresent()) {
-      provenance.qbicMeasurementID = measurementIdResult.get();
       provenance.addToHistory(taskDir.getAbsolutePath());
       try {
         updateProvenanceFile(provenanceSearch.get(), provenance);
@@ -173,12 +165,13 @@ public class EvaluationRequest extends Thread {
       }
       return;
     }
-    var errorMessage = ErrorSummary.createSimple(taskDir.getName(), dataset.getName(),
+    var errorMessage = ErrorSummary.createSimple(taskDir.getName(),
+        String.join(", ", provenance.datasetFiles),
         "Missing QBiC measurement ID",
         "For a successful registration please provide the pre-registered QBiC measurement ID");
     LOG.error(
         "Missing measurement identifier: no known measurement id was found in the content of directory '{}' in task '{}'",
-        dataset.getName(), taskDir.getName());
+        String.join(", ", provenance.datasetFiles), taskDir.getName());
     moveBackToOrigin(taskDir, provenance, errorMessage.toString());
   }
 
@@ -208,7 +201,8 @@ public class EvaluationRequest extends Thread {
   }
 
   private void moveBackToOrigin(File taskDir, Provenance provenance, String reason) {
-    LOG.info("Moving back to original user directory: " + taskDir.getAbsolutePath());
+    LOG.info("Moving back to original user directory: {}",
+        Paths.get(provenance.userWorkDirectoryPath).resolve(usersErrorDirectory));
     try {
       var errorFile = taskDir.toPath().resolve("error.txt").toFile();
       errorFile.createNewFile();

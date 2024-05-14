@@ -46,7 +46,7 @@ public class Application {
 
     List<ProcessRegistrationRequest> registrationWorkers = new LinkedList<>();
     for (int i=0; i<registrationWorkersConfig.amountOfWorkers(); i++) {
-      registrationWorkers.add(new ProcessRegistrationRequest(requestQueue, registrationConfiguration));
+      registrationWorkers.add(new ProcessRegistrationRequest(requestQueue, registrationConfiguration, globalConfig));
     }
 
     log.info("Registering {} processing workers...", processingWorkersConfig.threads());

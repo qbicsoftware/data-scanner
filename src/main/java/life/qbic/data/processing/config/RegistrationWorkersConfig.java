@@ -11,7 +11,9 @@ public class RegistrationWorkersConfig {
 
   private final Path targetDirectory;
 
-  public RegistrationWorkersConfig(int threads, String workingDirectory, String targetDirectory) {
+  private final String metadataFileName;
+
+  public RegistrationWorkersConfig(int threads, String workingDirectory, String targetDirectory, String metadataFileName) {
     if (threads < 1) {
       throw new IllegalArgumentException("Number of threads must be greater than 0");
     }
@@ -26,6 +28,7 @@ public class RegistrationWorkersConfig {
     this.workingDirectory = directory;
     this.amountOfWorkers = threads;
     this.targetDirectory = targetDirectoryPath;
+    this.metadataFileName = metadataFileName;
   }
 
   public int amountOfWorkers() {
@@ -38,5 +41,9 @@ public class RegistrationWorkersConfig {
 
   public Path targetDirectory() {
     return this.targetDirectory;
+  }
+
+  public String metadataFileName() {
+    return this.metadataFileName;
   }
 }
