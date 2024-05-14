@@ -6,6 +6,8 @@ checks before moving the dataset to an openBIS ETL routine.
 
 > [!NOTE]
 > Requires Java SE 17 or newer.
+> 
+> The application builds can be found on our [Sonatype Maven Repository](https://qbic-repo.qbic.uni-tuebingen.de/service/rest/repository/browse/maven-releases/life/qbic/data-processing).
 
 ## Run the app
 
