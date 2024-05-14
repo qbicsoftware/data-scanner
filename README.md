@@ -4,6 +4,9 @@ A small Java application that listens to data ready for registration and perform
 pre-registration
 checks before moving the dataset to an openBIS ETL routine.
 
+> [!NOTE]
+> Requires Java SE 17 or newer.
+
 ## Run the app
 
 Checkout the latest code from `main` and run the Maven goal `spring-boot:run`:
@@ -51,10 +54,36 @@ user's directory will be ignored.
 > Moving operations on the same file system are basically a rename of the file path and
 > atomic.
 
-Once a new dataset is detected, it gets queued for registration and the next step will take over.
+Within a user's registration directory, the application expect a registration task to be bundled in one 
+folder, e.g.:
+
+```bash
+|- myuser/registration              // registration folder for user `myuser`
+   |- my-registration-batch  // folder name is irrelevant
+        |- file1_1.fastq.gz
+        |- file1_2.fastq.gz
+        |- file2_1.fastq.gz
+        |- file2_2.fastq.gz
+        |- metadata.txt  // mandatory!
+```
+
+The folder ``my-registration-batch`` represents an atomic registration unit and must contain the `metadata.txt` with information
+about the measurement ID and the files belonging to this measurement dataset.
+
+Following the previous example, the content of a matching `metadata.txt` would look like this:
+
+```bash
+NGSQTEST001AE-1234512312   file1_1.fastq.gz
+NGSQTEST001AE-1234512312   file1_2.fastq.gz
+NGSQTEST002BC-3321314441   file2_1.fastq.gz
+NGSQTEST002BC-3321314441   file2_2.fastq.gz
+```
+Make sure that the columns are `TAB`-separated (`\t`)!
+
+Once a new registration unit is detected, it gets queued for registration and the next step will take over.
 
 A registration request gets only submitted once to the registration queue and will subsequently get
-ignored by the scanning process, as long as the filename or modification timestamp does not change.
+ignored by the scanning process, as long as the folder name or modification timestamp does not change.
 
 If the application quits or stops unexpectedly, on re-start they will get detected and resubmitted
 again.
@@ -69,10 +98,12 @@ harmonised error handling).
 Its configuration parameters can be set via environment variables, see
 the [registration step config](#registration-step-config) section to learn more.
 
-In the current implementation, the registration step does two things:
+In the current implementation, the registration step does several things:
 
-1. Assign every task a unique ID
-2. Provide provenance information
+1. Validating the registration metadata file
+2. Aggregate all measurement files per measurement ID
+3. Assign every task (measurement) a unique task ID
+4. Provide provenance information
 
 The task id is just a randomly generated UUID-4 to ensure that datasets with the same name do not
 get
@@ -86,7 +117,8 @@ The final task directory structure looks then like this (task dir name is an exa
 
 ```bash provenance.json
  |- 74c5d26f-b756-42c3-b6f4-2b4825670a2d
-        |- my_dataset
+        |- file1_1.fastq.gz
+        |- file1_2.fastq.gz
         |- provenance.json
 ```
 
@@ -94,12 +126,11 @@ Here is an example of the provenance file:
 
 ```json
 {
-  "origin": "/Users/myuser/Downloads/scanner-test/user1/registration",
-  "user": "/Users/myuser/Downloads/scanner-test/user1",
-  "measurementId": "NGSQTEST001AE-23214214455",
+  "origin": "/Users/myuser/registration",
+  "user": "/Users/myuser",
+  "measurementId": "QTEST001AE-1234512312",
   "history": [
-    "/Users/myuser/Downloads/scanner-working-dir/74c5d26f-b756-42c3-b6f4-2b4825670a2d/proteomics_measurements(48).xlsx",
-    "/Users/sven1103/Downloads/scanner-processing-dir/74c5d26f-b756-42c3-b6f4-2b4825670a2d"
+    "/opt/scanner-app/scanner-processing-dir/74c5d26f-b756-42c3-b6f4-2b4825670a2d"
   ]
 }
 ```
