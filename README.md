@@ -1,10 +1,11 @@
-# Spring Boot Starter (template)
+# Data processing
 
-A minimal working starter template for a Spring Boot non-web applications using the
-Spring [CommandLineRunner](https://docs.spring.io/spring-boot/docs/current/api/org/springframework/boot/CommandLineRunner.html)
-interface with a demonstration of Java
-annotation-based [Inversion of Control](https://stackoverflow.com/questions/3058/what-is-inversion-of-control)
-via [Dependency Injection](https://stackoverflow.com/questions/130794/what-is-dependency-injection).
+A small Java application that listens to data ready for registration and performs several
+pre-registration
+checks before moving the dataset to an openBIS ETL routine.
+
+> [!NOTE]
+> Requires Java SE 17 or newer.
 
 ## Run the app
 
@@ -14,174 +15,248 @@ Checkout the latest code from `main` and run the Maven goal `spring-boot:run`:
 mvn spring-boot:run
 ```
 
+You have to set different environment variables first to configure the individual process parts.
+Have a look at the [configuration](#configuration) setting to learn more .
+
 ## What the app does
 
-This small app just parses a file with a collection of good coding prayers and creates a singleton
-instance of an `CodingPrayersMessageService`. This concrete implementation uses the
-interface `MessageService`, that comes with only one public method: `String collectMessage()`.
+The following figure gives an overview of the process building blocks and flow:
 
-This service is used to demonstrate the IoC principle. We have defined another interface `NewsMedia`
-and provide a concrete implementation `DeveloperNews`, that will call the message service to receive
-recent news and forward them to the caller.
+<img src="./img/process-flow.jpg">
 
-In the main app code, we just retrieve this Singleton instance or Bean in Spring lingua from the
-loaded context and call the news media `getNEws()` method. The collected message is then printed out
-to the command line interface:
+The **basic process flow** can be best described with:
 
+1. Scanning step
+2. Registration step (preparation)
+3. 1 to N processing steps
+
+The last processing step usually hands the dataset over to the actual registration system, in our
+case it is several
+openBIS ETL dropboxes. In the current implementation, a marker file is created after successful
+transfer into the target folder: `.MARKER_is_finished_[task ID]`
+
+The current implementation consists of 4 steps: _scanning, registration, processing, evaluation_ and
+are described in the following subsections.
+
+### Scanning
+
+In this step, the application scans a [pre-defined path](#scanner-step-config) and looks for
+existing registration folders.
+If a registration folder is present, it is recorded and will be investigated. All other files in a
+user's directory will be ignored.
+
+> [!NOTE]
+> It is important that the move operation of any dataset in the registration folder is **atomic**!
+> Otherwise, data corruption will occur. Ideally the dataset is staged into the user's home folder
+> first (e.g. a copy operation, an upload via SFTP or SSH) and then **moved** into the registration
+> folder.
+>
+> Moving operations on the same file system are basically a rename of the file path and
+> atomic.
+
+Within a user's registration directory, the application expect a registration task to be bundled in one 
+folder, e.g.:
+
+```bash
+|- myuser/registration       // registration folder for user `myuser`
+   |- my-registration-batch  // folder name is irrelevant
+        |- file1_1.fastq.gz
+        |- file1_2.fastq.gz
+        |- file2_1.fastq.gz
+        |- file2_2.fastq.gz
+        |- metadata.txt  // mandatory!
 ```
 
-  .   ____          _            __ _ _
- /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
-( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
- \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
-  '  |____| .__|_| |_|_| |_\__, | / / / /
- =========|_|==============|___/=/_/_/_/
- :: Spring Boot ::                (v2.5.6)
+The folder ``my-registration-batch`` represents an atomic registration unit and must contain the `metadata.txt` with information
+about the measurement ID and the files belonging to this measurement dataset.
 
-2021-11-18 09:17:37.640  INFO 68052 --- [           main] l.q.s.SpringMinimalTemplateApplication   : Starting SpringMinimalTemplateApplication using Java 17.0.1 on imperator.am10.uni-tuebingen.de with PID 68052 (/Users/sven1103/git/spring-boot-starter-template/target/classes started by sven1103 in /Users/sven1103/git/spring-boot-starter-template)
-2021-11-18 09:17:37.641  INFO 68052 --- [           main] l.q.s.SpringMinimalTemplateApplication   : No active profile set, falling back to default profiles: default
-2021-11-18 09:17:38.164  INFO 68052 --- [           main] l.q.s.SpringMinimalTemplateApplication   : Started SpringMinimalTemplateApplication in 0.808 seconds (JVM running for 1.489)
-####################### Message of the day ##################
-Have you written unit tests yet? If not, do it!
-##############################################################
+Following the previous example, the content of a matching `metadata.txt` would look like this:
 
+```bash
+NGSQTEST001AE-1234512312   file1_1.fastq.gz
+NGSQTEST001AE-1234512312   file1_2.fastq.gz
+NGSQTEST002BC-3321314441   file2_1.fastq.gz
+NGSQTEST002BC-3321314441   file2_2.fastq.gz
+```
+Make sure that the columns are `TAB`-separated (`\t`)!
+
+Once a new registration unit is detected, it gets queued for registration and the next step will take over.
+
+A registration request gets only submitted once to the registration queue and will subsequently get
+ignored by the scanning process, as long as the folder name or modification timestamp does not change.
+
+If the application quits or stops unexpectedly, on re-start they will get detected and resubmitted
+again.
+
+### Registration
+
+This process step is preparing the dataset registration for subsequent pre-registration task, to
+guarantee a unified structure and processing model, other steps can build on and take actions
+accordingly (e.g.
+harmonised error handling).
+
+Its configuration parameters can be set via environment variables, see
+the [registration step config](#registration-step-config) section to learn more.
+
+In the current implementation, the registration step does several things:
+
+1. Validating the registration metadata file
+2. Aggregate all measurement files per measurement ID
+3. Assign every task (measurement) a unique task ID
+4. Provide provenance information
+
+The task id is just a randomly generated UUID-4 to ensure that datasets with the same name do not
+get
+overwritten during the processing.
+
+The provenance information will be written into the task directory in an own file next to the
+dataset
+and is of type JSON.
+
+The final task directory structure looks then like this (task dir name is an example):
+
+```bash provenance.json
+ |- 74c5d26f-b756-42c3-b6f4-2b4825670a2d
+        |- file1_1.fastq.gz
+        |- file1_2.fastq.gz
+        |- provenance.json
 ```
 
-## Realisation of IoC and DPI
+Here is an example of the provenance file:
 
-The messages collection is stored in a simple text file `messages.txt`, that is provided with the
-apps `resources`. Just go ahead and change the content of the file and run the app!
-
-<img width="308" alt="grafik" src="https://user-images.githubusercontent.com/9976560/142380084-d01081d2-79fb-4ff3-acc5-3140dca38f6a.png">
-
-
-So how does the app know where to find this file and **load the messages content**?
-
-We have configured it as a **external property** in a file `application.properties` and load the
-configuration on application startup! Cool eh?
-
-<img width="381" alt="grafik" src="https://user-images.githubusercontent.com/9976560/142376871-5bee068f-208c-4af0-a35b-9442ee498789.png">
-
-This is how the file content looks like:
-
-```
-messages.file=messages.txt
-```
-
-So how do we access the value of the `messages.file` property in our application with Spring?
-
-Have a look in the class `AppConfig`, there the magic happens:
-
-```groovy
-@Configuration
-@PropertySource("application.properties")
-class AppConfig {
-
-    @Value('${messages.file}')
-    public String messagesFile
-```
-
-We define the property source, which is the file `application.properties` that is provided in the
-resource folder of the app and available to the classpath. We also tell with the
-annotation `@Configuration` Spring, hey this is a class that holds app configuration data!
-
-With the annotation `@Value('${messages.file}')` we tell Spring, which property's value should be
-injected. Here we make use of field injection, other types of injection like method and constructor
-injection are also possible.
-
-So how is the concrete implementation of the `MessageService` presented to Spring? We can use
-the `@Bean` annotation here, to tell Spring: _hey, this is sth you must load on startup and provide
-to the context_.
-
-```java
-@Configuration
-@PropertySource("application.properties")
-class AppConfig {
-
-    ....
-
-    @Bean
-    MessageService messageService() {
-        return new CodingPrayersMessageService(messagesFile)
-    }
-```
-
-That is all there is, you can now load the bean in your main application code:
-
-```java
-@SpringBootApplication
-class SpringMinimalTemplateApplication {
-
-    static void main(String[] args) {
-	SpringApplication.run(SpringMinimalTemplateApplication, args)
-	// load the annotation context
-	AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext(AppConfig.class)
-	// get the service bean
-	MessageService service = context.getBean("messageService", MessageService.class)
-	// collect the message and praise the magic
-	println service.collectMessage()
-
-```
-
-### Inversion of Control
-
-<img width="990" alt="grafik" src="https://user-images.githubusercontent.com/9976560/144576610-4dd4aa0a-1b58-4832-aaac-0bb70757a9a1.png">
-
-You might have already spotted the interface `NewsMedia` and its implementing class `DeveloperNews`
-in the app's source code. Here you can see an example for the magic of inversion of control.
-
-The `NewsMedia` interface is just an abstraction that we will later use, because we don't care about
-the actual implementation details. By this, we also do not create any dependencies to concrete
-implementation details but on actual behaviour. Concrete implementations can then later be exchanged
-without causing any breaking changes in the client code base.
-
-The interface has only one method: `String getNews()`. Now let's have a closer look into the
-class `DeveloperNews` that implements this interface:
-
-```java
-class DeveloperNews implements NewsMedia{
-
-    private MessageService service
-
-    DeveloperNews(MessageService service) {
-        this.service = service
-    }
-
-    @Override
-    String getNews() {
-        return service.collectMessage()
-    }
+```json
+{
+  "origin": "/Users/myuser/registration",
+  "user": "/Users/myuser",
+  "measurementId": "QTEST001AE-1234512312",
+  "history": [
+    "/opt/scanner-app/scanner-processing-dir/74c5d26f-b756-42c3-b6f4-2b4825670a2d"
+  ]
 }
 ```
 
-When you check the constructor signature, you see that this method has only one argument, which is a
-reference to an object of type `MessageService`. And when the `getNews()` method is called by the
-client, the class delegates this request to the message service. Since we have stored the reference
-in a private field, that is super easy, we known how to call the service.
+> [!NOTE]
+> The following properties can be expected after all process steps have been executed:
+>
+> `origin`: from which path the dataset has been detected during scanning
+>
+> `user`:  from which user directory the dataset has been picked up
+>
+> `measurementId`: any valid QBiC measurement ID that has been found in the dataset (this might
+> be `null`) in case the evaluation has not been done yet.
+>
+> `history`: a list of history items, which steps have been performed. The list is ordered by first
+> processing steps being at the start and the latest at the end.
 
-So why is this inversion of control?
+### Processing
 
-Because the `DeveloperNews` class does not manage the instantiation of a concrete message service.
-The configuration happened outside of the class, therefore the DeveloperNews class has no direct
-control over the instantiation. If it had, it would look like this:
+In the current implementation, this process step only does some simple checks, and can be extended to e.g.
+perform checksum validation. Feel free to use it as template for subsequent process steps.
 
-```java
-DeveloperNews(String filePathToMessages) {
-        this.service = new CodingPrayersMessageService(filePathToMessages)
-}
+### Evaluation
+
+Last but not least, this step looks for any present QBiC measurement ID in the dataset name. If none
+is given, the registration cannot be executed.
+
+In this case the process moves the task directory into the user's home error folder. After the user
+has
+provided a valid QBiC measurement id, they can move the dataset into registration again.
+
+## Configuration
+
+### Global settings
+
+```properties
+#------------------------
+# Global settings
+#------------------------
+# Directory name that will be used for the manual intervention directory
+# Created in the users' home folders
+# e.g. /home/<user1>/error
+users.error.directory.name=error
+# Directory name that will be used for the detecting dropped datasets
+# Needs to be present in the users' home folders
+# e.g. /home/<user1>/registration
+users.registration.directory.name=registration
 ```
 
-That doesn't look good, does it? In order to create an instance of a message service, we would need
-to know the conrete implementation and its required properties (here it is the file path to
-the `messages.txt`). So the `DeveloperNews` class has the control over the message service.
+Configure the names of the two application directories for error handling and registration.
 
-Instead, we would like to not take care about these details, so we invert the control and inject the
-dependency via the constructor.
+> [!NOTE]
+> The `registration` folder needs to be present, the application is not creating it automatically,
+> no
+> prevent accidental dataset overwrite.
 
-Please find more in depth documentation on the
-official [Spring website](https://spring.io/projects/spring-framework).
+### Scanner step config
 
+```properties
+#--------------------------------------
+# Settings for the data scanning thread
+#--------------------------------------
+# Path to the directory that contains all user directories
+# e.g. /home in Linux or /Users in macOS
+scanner.directory=${SCANNER_DIR:/home}
+# The time interval (milliseconds) the scanner thread iterates through the scanner directory
+# Value must be an integer > 0
+scanner.interval=1000
+```
 
+Sets the applications top level scanning directory and considers every folder in it as an own
+user directory.
 
+The scanner interval is set to 1 second by default is not yet supposed to be configured via
+environment variables (if required, override it with command line arguments).
 
+### Registration step config
 
+Sets the number of threads per process, its working directory and the target directory, to where
+finished tasks are moved to after successful operation.
+
+```properties
+#----------------
+# Settings for the registration worker threads
+#----------------
+registration.threads=2
+registration.working.dir=${WORKING_DIR:}
+registration.target.dir=${PROCESSING_DIR:}
+```
+
+### Processing step config
+
+Sets the number of threads per process, its working directory and the target directory, to where
+finished tasks are moved to after successful operation. 
+
+```properties
+#------------------------------------
+# Settings for the 1. processing step
+# Proper packaging and provenance data, some simple checks
+#------------------------------------
+processing.threads=2
+processing.working.dir=${PROCESSING_DIR}
+processing.target.dir=${EVALUATION_DIR}
+```
+
+### Evaluation step config
+
+Sets the number of threads per process, its working directory and the target directory, to where
+finished tasks are moved to after successful operation.
+
+```properties
+#----------------------------------
+# Setting for the 2. processing step:
+# Measurement ID evaluation
+# ---------------------------------
+evaluations.threads=2
+evaluation.working.dir=${EVALUATION_DIR}
+# Define one or more target directories here
+# Example single target dir:
+#    evaluation.target.dirs=/my/example/target/dir
+# Example multiple target dir:
+#   evaluation.target.dirs=/my/example/target/dir1,/my/example/target/dir2,/my/example/target/dir3
+evaluation.target.dirs=${OPENBIS_ETL_DIRS}
+evaluation.measurement-id.pattern=^(MS|NGS)Q[A-Z0-9]{4}[0-9]{3}[A-Z0-9]{2}-[0-9]*
+```
+
+> [!NOTE]
+> You can define multiple target directories for this process! You just have to provide a `,`-separated list
+> of target directory paths. The implementation will assign the target directories based on a round-robin draw.
