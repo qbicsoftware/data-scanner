@@ -33,7 +33,7 @@ The **basic process flow** can be best described with:
 The last processing step usually hands the dataset over to the actual registration system, in our
 case it is several
 openBIS ETL dropboxes. In the current implementation, a marker file is created after successful
-transfer into the target folder: `.MARKER_is_finished_[dataset name]`
+transfer into the target folder: `.MARKER_is_finished_[task ID]`
 
 The current implementation consists of 4 steps: _scanning, registration, processing, evaluation_ and
 are described in the following subsections.
@@ -58,7 +58,7 @@ Within a user's registration directory, the application expect a registration ta
 folder, e.g.:
 
 ```bash
-|- myuser/registration              // registration folder for user `myuser`
+|- myuser/registration       // registration folder for user `myuser`
    |- my-registration-batch  // folder name is irrelevant
         |- file1_1.fastq.gz
         |- file1_2.fastq.gz
@@ -150,24 +150,8 @@ Here is an example of the provenance file:
 
 ### Processing
 
-In the current implementation, we prepare the dataset package. Every dataset is a directory, we do
-not rely
-on what the user has provided.
-
-In case the dataset is a single file, the application creates a wrapping directory with the same
-name and the suffix `_dataset` (see example below).
-
-> [!NOTE]
-> Transforming every dataset as a folder makes it easier to process the dataset in (future)
-> downstream processes (e.g. quality control, checksum validation, etc).
-> We create a harmonised structure of the task directory content, that can be relied on:
->
-> ```
-> |- 74c5d26f-b756-42c3-b6f4-2b4825670a2d  // directory
->       |- a_file.txt_dataset  // dataset folder
->               |- a_file.txt  // the original file
->       |- provenance.json  // file
-> ```
+In the current implementation, this process step only does some simple checks, and can be extended to e.g.
+perform checksum validation. Feel free to use it as template for subsequent process steps.
 
 ### Evaluation
 
