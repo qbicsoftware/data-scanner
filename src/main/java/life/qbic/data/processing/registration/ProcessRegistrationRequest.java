@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -53,7 +52,7 @@ public class ProcessRegistrationRequest extends Thread {
   private final Path workingDirectory;
   private final Path targetDirectory;
   private final String metadataFileName;
-  private final Path usersErrorDirectory;
+  private final Path userErrorDirectory;
   private AtomicBoolean active = new AtomicBoolean(false);
 
   public ProcessRegistrationRequest(@NonNull ConcurrentRegistrationQueue registrationQueue,
@@ -63,7 +62,7 @@ public class ProcessRegistrationRequest extends Thread {
     this.workingDirectory = configuration.workingDirectory();
     this.targetDirectory = configuration.targetDirectory();
     this.metadataFileName = configuration.metadataFileName();
-    this.usersErrorDirectory = globalConfig.usersErrorDirectory();
+    this.userErrorDirectory = globalConfig.usersErrorDirectory();
   }
 
   private static int nextThreadNumber() {
@@ -94,13 +93,13 @@ public class ProcessRegistrationRequest extends Thread {
       var errorFile = taskDir.resolve("error.txt").toFile();
       errorFile.createNewFile();
       Files.writeString(errorFile.toPath(), reason);
-      usersHomePath.resolve(usersErrorDirectory).toFile().mkdir();
+      usersHomePath.resolve(userErrorDirectory).toFile().mkdir();
       Files.move(taskDir,
-          usersHomePath.resolve(usersErrorDirectory)
+          usersHomePath.resolve(userErrorDirectory)
               .resolve(taskDir.toFile().getName()));
     } catch (IOException e) {
       log.error("Cannot move task to user intervention: %s".formatted(
-          usersHomePath.resolve(usersErrorDirectory)), e);
+          usersHomePath.resolve(userErrorDirectory)), e);
     }
   }
 
@@ -141,7 +140,8 @@ public class ProcessRegistrationRequest extends Thread {
 
     List<String> content;
     try {
-      content = new ArrayList<>(Files.readAllLines(Paths.get(metadataFile.get().getPath())));
+      content = Files.readAllLines(Paths.get(metadataFile.get().getPath())).stream()
+          .filter(row -> !row.isBlank()).toList();
     } catch (IOException e) {
       log.error("Error reading metadata file", e);
       throw new ValidationException("Cannot read metadata file", ErrorCode.IO_EXCEPTION);
