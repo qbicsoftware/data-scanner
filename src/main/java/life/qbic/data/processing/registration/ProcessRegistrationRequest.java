@@ -9,12 +9,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 import life.qbic.data.processing.ConcurrentRegistrationQueue;
 import life.qbic.data.processing.GlobalConfig;
 import life.qbic.data.processing.Provenance;
@@ -66,8 +70,24 @@ public class ProcessRegistrationRequest extends Thread {
     return threadNumber++;
   }
 
+  private static void cleanup(Path workingTargetDir) throws IOException {
+    try (var content = Files.walk(workingTargetDir)) {
+      content.map(Path::toFile).sorted(Comparator.reverseOrder()).forEach(File::delete);
+    }
+  }
+
+  private static void processMeasurement(String measurementId,
+      Map<String, List<RegistrationMetadata>> aggregatedFilesByMeasurementId, Path workingTargetDir,
+      Path taskDir) throws IOException {
+    for (RegistrationMetadata metadataEntry : aggregatedFilesByMeasurementId.get(
+        measurementId)) {
+      Files.move(workingTargetDir.resolve(metadataEntry.file()),
+          taskDir.resolve(metadataEntry.file()));
+    }
+  }
+
   private void moveBackToOrigin(Path target, Path usersHomePath, String reason) {
-    log.info("Moving back to original user directory: {}", target);
+    log.info("Moving back to original user directory: {}", usersHomePath);
     try {
       Path taskDir = createTaskDirectory();
       Files.move(target, taskDir.resolve(target.getFileName()));
@@ -91,6 +111,23 @@ public class ProcessRegistrationRequest extends Thread {
         throw new ValidationException(
             "Unknown file reference in metadata: %s".formatted(metadataEntry.file()),
             ErrorCode.FILE_NOT_FOUND);
+      }
+    }
+    // To save the user from any trouble, let's also check if all dataset files are described by a metadata entry
+    var filesInMetadata = metadata.stream().map(RegistrationMetadata::file).toList();
+    var physicalFiles = request.toFile().listFiles();
+    for (File file : physicalFiles) {
+      // we ignore hidden files
+      if (file.isHidden()) {
+        continue;
+      }
+      if (file.getName().endsWith(metadataFileName)) {
+        continue;
+      }
+      if (!filesInMetadata.contains(file.getName())) {
+        throw new ValidationException(
+            "Found more files than described in the metadata file: %s".formatted(file.getName()),
+            ErrorCode.MISSING_FILE_ENTRY);
       }
     }
   }
@@ -133,13 +170,16 @@ public class ProcessRegistrationRequest extends Thread {
   }
 
   private void writeProvenanceInformation(Path taskDir, Path newLocation,
-      RegistrationRequest request)
+      RegistrationRequest request, String measurementId,
+      List<String> datasetFiles)
       throws IOException {
     Provenance provenance = new Provenance();
     provenance.originPath = request.origin().toString();
     provenance.history = new ArrayList<>();
     provenance.history.add(newLocation.toString());
     provenance.userWorkDirectoryPath = String.valueOf(request.userPath());
+    provenance.qbicMeasurementID = measurementId;
+    provenance.addDatasetFiles(datasetFiles);
     ObjectMapper mapper = new ObjectMapper();
     mapper.writerWithDefaultPrettyPrinter()
         .writeValue(taskDir.resolve("provenance.json").toFile(), provenance);
@@ -171,16 +211,26 @@ public class ProcessRegistrationRequest extends Thread {
       var request = registrationQueue.poll();
       active.set(true);
       log.info("Processing request: {}", request);
+      var intermediateTaskDir = createTaskDirectory();
       try {
-        var registrationMetadata = findAndParseMetadata(request.target());
-        validateFileEntries(registrationMetadata, request.target());
-        Path taskDir = createTaskDirectory();
-        Path newLocation = taskDir.resolve(request.target().getFileName());
-        Files.move(request.target(), newLocation);
-        writeProvenanceInformation(taskDir, newLocation, request);
-        Files.move(taskDir, targetDirectory.resolve(taskDir.getFileName()));
+        // Let's first move the registration request content to the working directory of the process
+
+        Files.move(request.target(), intermediateTaskDir.resolve(request.target().getFileName()));
+        var workingTargetDir = intermediateTaskDir.resolve(request.target().getFileName());
+
+        var registrationMetadata = findAndParseMetadata(workingTargetDir);
+        validateFileEntries(registrationMetadata, workingTargetDir);
+
+        var aggregatedFilesByMeasurementId = registrationMetadata.stream().collect(
+            Collectors.groupingBy(RegistrationMetadata::measurementId));
+
+        processAll(aggregatedFilesByMeasurementId, workingTargetDir, request);
+
+        // Finally clean up the task directory, which should only contain the original metadata file
+        cleanup(workingTargetDir);
       } catch (ValidationException e) {
-        moveBackToOrigin(request.target(), request.userPath(), e.getMessage());
+        log.error("Failed validation processing request: %s".formatted(request), e);
+        moveBackToOrigin(intermediateTaskDir, request.userPath(), e.getMessage());
       } catch (RuntimeException e) {
         log.error("Error moving task directory", e);
         // TODO move back to user folder
@@ -191,6 +241,20 @@ public class ProcessRegistrationRequest extends Thread {
         active.set(false);
         log.info("Processing completed: {}", request);
       }
+    }
+  }
+
+  private void processAll(Map<String, List<RegistrationMetadata>> aggregatedFilesByMeasurementId,
+      Path workingTargetDir, RegistrationRequest request) throws IOException {
+    for (String measurementId : aggregatedFilesByMeasurementId.keySet()) {
+      // We now create individual task directories for every measurement dataset
+      Path taskDir = createTaskDirectory();
+      processMeasurement(measurementId, aggregatedFilesByMeasurementId, workingTargetDir, taskDir);
+
+      writeProvenanceInformation(taskDir, targetDirectory, request, measurementId,
+          aggregatedFilesByMeasurementId.get(measurementId).stream()
+              .map(RegistrationMetadata::file).toList());
+      Files.move(taskDir, targetDirectory.resolve(taskDir.getFileName()));
     }
   }
 

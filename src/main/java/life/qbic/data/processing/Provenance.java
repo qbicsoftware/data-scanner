@@ -11,6 +11,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -41,6 +43,9 @@ public class Provenance {
 
   @JsonProperty("measurementId")
   public String qbicMeasurementID;
+
+  @JsonProperty("datasetFiles")
+  public List<String> datasetFiles;
 
   /**
    * A list of ordered processing folder stops the dataset has traversed and passed successfully.
@@ -93,6 +98,22 @@ public class Provenance {
     UNKNOWN_CONTENT,
     NOT_FOUND,
     IO_ERROR
+  }
+
+  public void addDatasetFiles(Collection<String> datasetFiles) {
+    Objects.requireNonNull(datasetFiles);
+    if (this.datasetFiles == null) {
+      this.datasetFiles = new ArrayList<>();
+    }
+    this.datasetFiles.addAll(datasetFiles);
+  }
+
+  public void addDatasetFile(String datasetFile) {
+    addDatasetFiles(Collections.singletonList(datasetFile));
+  }
+
+  public Collection<String> datasetFiles() {
+    return datasetFiles.stream().toList();
   }
 
   public static class ProvenanceException extends RuntimeException {

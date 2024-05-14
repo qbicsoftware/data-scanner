@@ -133,7 +133,7 @@ public class ProcessingRequest extends Thread {
     }
 
     Provenance finalProvenance = provenance;
-    packageDataset(taskDir);
+    //packageDataset(taskDir);
     taskDirContent.stream().filter(file -> !file.getName().equals(Provenance.FILE_NAME)).findFirst()
         .ifPresent(file -> {
           finalProvenance.addToHistory(taskDir.getAbsolutePath());
