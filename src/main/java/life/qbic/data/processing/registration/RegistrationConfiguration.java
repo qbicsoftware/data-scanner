@@ -9,8 +9,9 @@ public class RegistrationConfiguration {
 
   private final Path workingDirectory;
   private final Path targetDirectory;
+  private final String metadataFileName;
 
-  public RegistrationConfiguration(String workingDirectory, String targetDirectory) {
+  public RegistrationConfiguration(String workingDirectory, String targetDirectory, String metadataFileName) {
     this.workingDirectory = Paths.get(Objects.requireNonNull(workingDirectory, "workingDirectory must not be null"));
     if (!workingDirectory().toFile().exists()) {
       throw new IllegalArgumentException(targetDirectory + " does not exist");
@@ -25,6 +26,10 @@ public class RegistrationConfiguration {
     if (!targetDirectory().toFile().isDirectory()) {
       throw new IllegalArgumentException(targetDirectory + " is not a directory");
     }
+    if (metadataFileName == null || metadataFileName.isEmpty()) {
+      throw new IllegalArgumentException("metadataFileName must not be null or empty");
+    }
+    this.metadataFileName = metadataFileName;
   }
 
   public Path workingDirectory() {
@@ -34,4 +39,6 @@ public class RegistrationConfiguration {
   public Path targetDirectory() {
     return targetDirectory;
   }
+
+  public String metadataFileName() { return metadataFileName; }
 }

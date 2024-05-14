@@ -28,23 +28,26 @@ class AppConfig {
   @Bean
   ScannerConfiguration scannerConfiguration(
       @Value("${scanner.directory}") String scannerDirectory,
-      @Value("${scanner.interval}") int interval) {
-    return new ScannerConfiguration(scannerDirectory, interval);
+      @Value("${scanner.interval}") int interval, @Value("${scanner.ignore}") String[] ignore) {
+    return new ScannerConfiguration(scannerDirectory, interval, ignore);
   }
 
   @Bean
   RegistrationWorkersConfig registrationWorkersConfig(
       @Value("${registration.threads}") int amountOfWorkers,
       @Value("${registration.working.dir}") String workingDirectory,
-      @Value("${registration.target.dir}") String targetDirectory) {
-    return new RegistrationWorkersConfig(amountOfWorkers, workingDirectory, targetDirectory);
+      @Value("${registration.target.dir}") String targetDirectory,
+      @Value("${registration.metadata.filename}") String metadataFileName) {
+    return new RegistrationWorkersConfig(amountOfWorkers, workingDirectory, targetDirectory,
+        metadataFileName);
   }
 
   @Bean
   RegistrationConfiguration registrationConfiguration(
       RegistrationWorkersConfig registrationWorkersConfig) {
     return new RegistrationConfiguration(registrationWorkersConfig.workingDirectory().toString(),
-        registrationWorkersConfig.targetDirectory().toString());
+        registrationWorkersConfig.targetDirectory().toString(),
+        registrationWorkersConfig.metadataFileName());
   }
 
   @Bean

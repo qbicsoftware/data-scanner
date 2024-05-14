@@ -46,7 +46,7 @@ public class Application {
 
     List<ProcessRegistrationRequest> registrationWorkers = new LinkedList<>();
     for (int i=0; i<registrationWorkersConfig.amountOfWorkers(); i++) {
-      registrationWorkers.add(new ProcessRegistrationRequest(requestQueue, registrationConfiguration));
+      registrationWorkers.add(new ProcessRegistrationRequest(requestQueue, registrationConfiguration, globalConfig));
     }
 
     log.info("Registering {} processing workers...", processingWorkersConfig.threads());
@@ -75,6 +75,8 @@ public class Application {
       registrationWorkers.forEach(Thread::interrupt);
       processingWorkers.forEach(Thread::interrupt);
       evaluationWorkers.forEach(Thread::interrupt);
+      // if every worker thread has shut down successfully, the application can exit with status code 0
+      Runtime.getRuntime().halt(0);
     }, "Shutdown-thread"));
 
   }

@@ -13,6 +13,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import life.qbic.data.processing.ConcurrentRegistrationQueue;
 import life.qbic.data.processing.GlobalConfig;
 import life.qbic.data.processing.registration.RegistrationRequest;
@@ -40,6 +41,7 @@ public class Scanner extends Thread {
   private final HashSet<Path> userProcessDirectories = new HashSet<>();
   private final ConcurrentRegistrationQueue registrationQueue;
   private final HashSet<RegistrationRequest> submittedRequests = new HashSet<>();
+  private final Set<String> ignoredDirectories = new HashSet<>();
 
   public Scanner(ScannerConfiguration scannerConfiguration,
       ConcurrentRegistrationQueue registrationQueue, GlobalConfig globalConfig) {
@@ -52,7 +54,14 @@ public class Scanner extends Thread {
     this.scanInterval = scannerConfiguration.scanInterval();
     this.registrationQueue = Objects.requireNonNull(registrationQueue,
         "registrationQueue must not be null");
-    this.registrationPath = globalConfig.usersDirectoryRegistration();
+    this.ignoredDirectories.addAll(scannerConfiguration.ignore());
+    if (!this.ignoredDirectories.isEmpty()) {
+      log.info("Ignoring {} directories", ignoredDirectories.size());
+    }
+  }
+
+  private boolean notToIgnore(String filename) {
+    return !ignoredDirectories.contains(filename);
   }
 
   @Override
@@ -62,6 +71,7 @@ public class Scanner extends Thread {
       try {
         var userFolderIterator = Arrays.stream(
                 Objects.requireNonNull(scannerPath.toFile().listFiles())).filter(File::isDirectory)
+            .filter(file -> notToIgnore(file.getName()))
             .toList().iterator();
 
         while (userFolderIterator.hasNext()) {

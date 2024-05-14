@@ -133,7 +133,6 @@ public class ProcessingRequest extends Thread {
     }
 
     Provenance finalProvenance = provenance;
-    packageDataset(taskDir);
     taskDirContent.stream().filter(file -> !file.getName().equals(Provenance.FILE_NAME)).findFirst()
         .ifPresent(file -> {
           finalProvenance.addToHistory(taskDir.getAbsolutePath());
@@ -151,22 +150,6 @@ public class ProcessingRequest extends Thread {
             moveToSystemIntervention(taskDir, "Writing task directory failed");
           }
         });
-  }
-
-  private void packageDataset(File taskDir) {
-    Optional<File> datasetSearch = Arrays.stream(taskDir.listFiles())
-        .filter(file -> !file.getName().equals(Provenance.FILE_NAME)).findFirst();
-    datasetSearch.ifPresent(file -> {
-      if (file.isFile()) {
-       File datasetDir = taskDir.toPath().resolve(file.getName() + "_dataset").toFile();
-       datasetDir.mkdir();
-        try {
-          Files.move(file.toPath(), datasetDir.toPath().resolve(file.getName()));
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-      }
-    });
   }
 
   private Optional<File> findProvenanceFile(List<File> taskDirContent) {
