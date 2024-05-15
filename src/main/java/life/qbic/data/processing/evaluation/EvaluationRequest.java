@@ -50,17 +50,15 @@ public class EvaluationRequest extends Thread {
   private final AtomicBoolean active = new AtomicBoolean(false);
   private final AtomicBoolean terminated = new AtomicBoolean(false);
   private final Path workingDirectory;
-  private final Pattern measurementIdPattern;
   private final Path usersErrorDirectory;
   private final RoundRobinDraw<Path> targetDirectories;
   private Path assignedTargetDirectory;
 
   public EvaluationRequest(Path workingDirectory, RoundRobinDraw<Path> targetDirectories,
-      Pattern measurementIdPattern, Path usersErrorDirectory) {
+     Path usersErrorDirectory) {
     this.setName(THREAD_NAME.formatted(nextThreadNumber()));
     this.workingDirectory = workingDirectory;
     this.targetDirectories = targetDirectories;
-    this.measurementIdPattern = measurementIdPattern;
     if (!workingDirectory.resolve(INTERVENTION_DIRECTORY).toFile().mkdir()
         && !workingDirectory.resolve(
         INTERVENTION_DIRECTORY).toFile().exists()) {
@@ -73,7 +71,6 @@ public class EvaluationRequest extends Thread {
 
   public EvaluationRequest(EvaluationConfiguration evaluationConfiguration) {
     this(evaluationConfiguration.workingDirectory(), evaluationConfiguration.targetDirectories(),
-        evaluationConfiguration.measurementIdPattern(),
         evaluationConfiguration.usersErrorDirectory());
   }
 
@@ -183,10 +180,6 @@ public class EvaluationRequest extends Thread {
   private boolean createMarkerFile(Path targetDirectory, String name) throws IOException {
     Path markerFileName = Paths.get(".MARKER_is_finished_" + name);
     return targetDirectory.resolve(markerFileName).toFile().createNewFile();
-  }
-
-  private Optional<File> findDataset(File taskDir) {
-    return Arrays.stream(taskDir.listFiles()).filter(File::isDirectory).findFirst();
   }
 
   private void moveToSystemIntervention(File taskDir, String reason) {

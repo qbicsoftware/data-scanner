@@ -18,12 +18,10 @@ public class EvaluationConfiguration {
 
   private final Path workingDirectory;
   private final Collection<Path> targetDirectories;
-  private final Pattern measurementIdPattern;
   private final Path usersErrorDirectory;
   private final RoundRobinDraw<Path> targetDirectoriesRoundRobinDraw;
 
   public EvaluationConfiguration(String workingDirectory, Collection<Path> targetDirectories,
-      String measurementIdPattern,
       GlobalConfig globalConfig) {
     this.workingDirectory = Paths.get(workingDirectory);
     if (!this.workingDirectory.toFile().exists()) {
@@ -35,11 +33,7 @@ public class EvaluationConfiguration {
           "Evaluation target directory '%s' does not exist".formatted(path));
     });
     this.targetDirectoriesRoundRobinDraw = RoundRobinDraw.create(targetDirectories);
-    if (measurementIdPattern.isBlank()) {
-      throw new IllegalArgumentException("Measurement id pattern cannot be blank");
-    }
     this.usersErrorDirectory = globalConfig.usersErrorDirectory();
-    this.measurementIdPattern = Pattern.compile(measurementIdPattern);
   }
 
   public Path workingDirectory() {
@@ -48,10 +42,6 @@ public class EvaluationConfiguration {
 
   public RoundRobinDraw<Path> targetDirectories() {
     return targetDirectoriesRoundRobinDraw;
-  }
-
-  public Pattern measurementIdPattern() {
-    return measurementIdPattern;
   }
 
   public Path usersErrorDirectory() {
