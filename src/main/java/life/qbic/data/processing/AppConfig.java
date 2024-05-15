@@ -52,20 +52,17 @@ class AppConfig {
 
   @Bean
   EvaluationWorkersConfig evaluationWorkersConfig(
-      @Value("${evaluations.threads}") int amountOfWorkers,
+      @Value("${evaluation.threads}") int amountOfWorkers,
       @Value("${evaluation.working.dir}") String workingDirectory,
-      @Value("${evaluation.target.dirs}") String[] targetDirectory,
-      @Value("${evaluation.measurement-id.pattern}") String measurementIdPattern) {
-    return new EvaluationWorkersConfig(amountOfWorkers, workingDirectory,
-        measurementIdPattern, Arrays.stream(targetDirectory).toList());
+      @Value("${evaluation.target.dirs}") String[] targetDirectory) {
+    return new EvaluationWorkersConfig(amountOfWorkers, workingDirectory, Arrays.stream(targetDirectory).toList());
   }
 
   @Bean
   EvaluationConfiguration evaluationConfiguration(EvaluationWorkersConfig evaluationWorkersConfig,
       GlobalConfig globalConfig) {
     return new EvaluationConfiguration(evaluationWorkersConfig.workingDirectory().toString(),
-        evaluationWorkersConfig.targetDirectories(),
-        evaluationWorkersConfig.measurementIdPattern().toString(), globalConfig);
+        evaluationWorkersConfig.targetDirectories(), globalConfig);
   }
 
   @Bean
@@ -86,8 +83,9 @@ class AppConfig {
   @Bean
   GlobalConfig globalConfig(
       @Value("${users.error.directory.name}") String usersErrorDirectoryName,
-      @Value("${users.registration.directory.name}") String usersRegistrationDirectoryName) {
-    return new GlobalConfig(usersErrorDirectoryName, usersRegistrationDirectoryName);
+      @Value("${users.registration.directory.name}") String usersRegistrationDirectoryName,
+      @Value("${qbic.measurement-id.pattern}") String measurementIdPattern) {
+    return new GlobalConfig(usersErrorDirectoryName, usersRegistrationDirectoryName, measurementIdPattern);
   }
 
 }
