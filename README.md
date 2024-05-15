@@ -130,7 +130,9 @@ Here is an example of the provenance file:
 {
   "origin": "/Users/myuser/registration",
   "user": "/Users/myuser",
-  "measurementId": "QTEST001AE-1234512312",
+  "measurementId": "NGSQTEST001AE-1234512312",
+  "datasetFiles" : [ "file1_1.fastq.gz", "file1_2.fastq.gz" ],
+  "taskId": "74c5d26f-b756-42c3-b6f4-2b4825670a2d",
   "history": [
     "/opt/scanner-app/scanner-processing-dir/74c5d26f-b756-42c3-b6f4-2b4825670a2d"
   ]
@@ -146,6 +148,10 @@ Here is an example of the provenance file:
 >
 > `measurementId`: any valid QBiC measurement ID that has been found in the dataset (this might
 > be `null`) in case the evaluation has not been done yet.
+> 
+> `datasetFiles`: a list of relative file paths belonging to the dataset
+> 
+> `taskId`: a unique task ID assigned by the application to track the dataset registration progress
 >
 > `history`: a list of history items, which steps have been performed. The list is ordered by first
 > processing steps being at the start and the latest at the end.
