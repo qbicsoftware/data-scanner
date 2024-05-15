@@ -179,6 +179,7 @@ public class ProcessRegistrationRequest extends Thread {
     provenance.history.add(newLocation.toString());
     provenance.userWorkDirectoryPath = String.valueOf(request.userPath());
     provenance.qbicMeasurementID = measurementId;
+    provenance.taskId = taskDir.toFile().getName();
     provenance.addDatasetFiles(datasetFiles);
     ObjectMapper mapper = new ObjectMapper();
     mapper.writerWithDefaultPrettyPrinter()
