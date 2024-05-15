@@ -10,9 +10,8 @@ public class EvaluationWorkersConfig {
   private final int threads;
   private final Path workingDirectory;
   private final Collection<Path> targetDirectories;
-  private final Pattern measurementIdPattern;
 
-  public EvaluationWorkersConfig(int threads, String workingDirectory, String measurementIdPattern,
+  public EvaluationWorkersConfig(int threads, String workingDirectory,
       Collection<String> targetDirectories) {
     if (threads < 1) {
       throw new IllegalArgumentException(
@@ -32,10 +31,6 @@ public class EvaluationWorkersConfig {
       throw new IllegalArgumentException(
           "Evaluation target directory '%s' does not exist".formatted(path));
     });
-    if (measurementIdPattern.isBlank()) {
-      throw new IllegalArgumentException("Measurement id pattern cannot be blank");
-    }
-    this.measurementIdPattern = Pattern.compile(measurementIdPattern);
   }
 
   public int threads() {
@@ -48,9 +43,5 @@ public class EvaluationWorkersConfig {
 
   public Collection<Path> targetDirectories() {
     return targetDirectories;
-  }
-
-  public Pattern measurementIdPattern() {
-    return measurementIdPattern;
   }
 }

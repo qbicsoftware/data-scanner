@@ -47,6 +47,9 @@ public class Provenance {
   @JsonProperty("datasetFiles")
   public List<String> datasetFiles;
 
+  @JsonProperty("taskId")
+  public String taskId;
+
   /**
    * A list of ordered processing folder stops the dataset has traversed and passed successfully.
    * <p>
