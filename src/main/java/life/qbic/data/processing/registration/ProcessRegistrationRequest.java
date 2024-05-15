@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import life.qbic.data.processing.ConcurrentRegistrationQueue;
 import life.qbic.data.processing.GlobalConfig;
@@ -53,6 +54,7 @@ public class ProcessRegistrationRequest extends Thread {
   private final Path targetDirectory;
   private final String metadataFileName;
   private final Path userErrorDirectory;
+  private final Pattern measurementIdPattern;
   private AtomicBoolean active = new AtomicBoolean(false);
 
   public ProcessRegistrationRequest(@NonNull ConcurrentRegistrationQueue registrationQueue,
@@ -63,6 +65,7 @@ public class ProcessRegistrationRequest extends Thread {
     this.targetDirectory = configuration.targetDirectory();
     this.metadataFileName = configuration.metadataFileName();
     this.userErrorDirectory = globalConfig.usersErrorDirectory();
+    this.measurementIdPattern = globalConfig.qbicMeasurementIdPattern();
   }
 
   private static int nextThreadNumber() {
@@ -221,6 +224,8 @@ public class ProcessRegistrationRequest extends Thread {
         var registrationMetadata = findAndParseMetadata(workingTargetDir);
         validateFileEntries(registrationMetadata, workingTargetDir);
 
+        validateMeasurementIds(registrationMetadata);
+
         var aggregatedFilesByMeasurementId = registrationMetadata.stream().collect(
             Collectors.groupingBy(RegistrationMetadata::measurementId));
 
@@ -242,6 +247,24 @@ public class ProcessRegistrationRequest extends Thread {
         log.info("Processing completed: {}", request);
       }
     }
+  }
+
+  private void validateMeasurementIds(List<RegistrationMetadata> registrationMetadata)
+      throws ValidationException {
+    registrationMetadata.stream().map(RegistrationMetadata::measurementId)
+        .filter(this::isMeasurementIdInvalid).findAny().ifPresent(invalidEntry -> {
+          throw new ValidationException(
+              "Invalid measurement ID format found: %s".formatted(invalidEntry),
+              ErrorCode.INVALID_MEASUREMENT_ID_FORMAT);
+        });
+  }
+
+  private boolean isMeasurementIdInvalid(String measurementId) {
+    return !isMeasurementIdValid(measurementId);
+  }
+
+  private boolean isMeasurementIdValid(String measurementId) {
+    return measurementIdPattern.matcher(measurementId).matches();
   }
 
   private void processAll(Map<String, List<RegistrationMetadata>> aggregatedFilesByMeasurementId,
