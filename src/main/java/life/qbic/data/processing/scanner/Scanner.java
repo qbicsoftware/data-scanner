@@ -102,16 +102,36 @@ public class Scanner extends Thread {
   private List<RegistrationRequest> detectDataForRegistration() {
     return userProcessDirectories.parallelStream()
         .map(Path::toFile)
+        .filter(this::matchesAccessRightsCriteria)
+        .filter(this::matchesRegistrationCriteria)
         .map(file -> createRequests(file.listFiles(), file.toPath())).flatMap(
             Collection::stream).toList();
+  }
+
+  private boolean matchesAccessRightsCriteria(File file) {
+    if (!file.canWrite()) {
+      log.error("Cannot write to file '{}'", file);
+      return false;
+    }
+    if (!file.canExecute()) {
+      log.error("Cannot execute file '{}'", file);
+      return false;
+    }
+    return true;
+  }
+
+  private boolean matchesRegistrationCriteria(File file) {
+    if (file.isHidden()) {
+      return false;
+    }
+    return file.isDirectory();
   }
 
   private List<RegistrationRequest> createRequests(File[] files, Path userDirectory) {
     if (files == null || files.length == 0) {
       return new ArrayList<>();
     }
-    return Arrays.stream(files).filter(file -> !file.isHidden())
-        .map(file -> createRequest(file, userDirectory)).toList();
+    return Arrays.stream(files).map(file -> createRequest(file, userDirectory)).toList();
   }
 
   private RegistrationRequest createRequest(File file, Path userDirectory) {
