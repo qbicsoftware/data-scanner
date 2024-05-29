@@ -124,7 +124,7 @@ public class Scanner extends Thread {
     if (file.isHidden()) {
       return false;
     }
-    return !file.isFile();
+    return file.isDirectory();
   }
 
   private List<RegistrationRequest> createRequests(File[] files, Path userDirectory) {
