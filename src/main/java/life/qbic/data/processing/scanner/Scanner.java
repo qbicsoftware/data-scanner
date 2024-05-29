@@ -113,7 +113,7 @@ public class Scanner extends Thread {
   private File[] applyFilterForProcessDir(File[] processDirContent) {
     return Arrays.stream(Objects.requireNonNull(processDirContent))
         .filter(this::matchesAccessRightsCriteria)
-        .filter(this::matchesRegistrationCriteria).toList().toArray(new File[0]);
+        .filter(this::matchesRegistrationCriteria).toArray(File[]::new);
   }
 
   private boolean matchesAccessRightsCriteria(File file) {
