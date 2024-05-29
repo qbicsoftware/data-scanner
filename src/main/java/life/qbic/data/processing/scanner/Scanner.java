@@ -102,6 +102,13 @@ public class Scanner extends Thread {
   private List<RegistrationRequest> detectDataForRegistration() {
     return userProcessDirectories.parallelStream()
         .map(Path::toFile)
+        .filter(file -> {
+          if (!file.canWrite()) {
+            log.error("Cannot write to file '{}'", file);
+            return false;
+          }
+          return true;
+        } )
         .map(file -> createRequests(file.listFiles(), file.toPath())).flatMap(
             Collection::stream).toList();
   }
