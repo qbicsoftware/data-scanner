@@ -110,7 +110,7 @@ public class Scanner extends Thread {
     if (files == null || files.length == 0) {
       return new ArrayList<>();
     }
-    return Arrays.stream(files).filter(file -> !file.isHidden())
+    return Arrays.stream(files).filter(file -> !file.isHidden()).filter(File::isDirectory)
         .map(file -> createRequest(file, userDirectory)).toList();
   }
 
