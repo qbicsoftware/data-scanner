@@ -103,6 +103,7 @@ public class Scanner extends Thread {
     return userProcessDirectories.parallelStream()
         .map(Path::toFile)
         .filter(this::matchesAccessRightsCriteria)
+        .filter(this::matchesRegistrationCriteria)
         .map(file -> createRequests(file.listFiles(), file.toPath())).flatMap(
             Collection::stream).toList();
   }
@@ -119,12 +120,18 @@ public class Scanner extends Thread {
     return true;
   }
 
+  private boolean matchesRegistrationCriteria(File file) {
+    if (file.isHidden()) {
+      return false;
+    }
+    return !file.isFile();
+  }
+
   private List<RegistrationRequest> createRequests(File[] files, Path userDirectory) {
     if (files == null || files.length == 0) {
       return new ArrayList<>();
     }
-    return Arrays.stream(files).filter(file -> !file.isHidden()).filter(File::isDirectory)
-        .map(file -> createRequest(file, userDirectory)).toList();
+    return Arrays.stream(files).map(file -> createRequest(file, userDirectory)).toList();
   }
 
   private RegistrationRequest createRequest(File file, Path userDirectory) {
