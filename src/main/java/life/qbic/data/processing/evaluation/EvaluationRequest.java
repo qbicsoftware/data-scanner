@@ -157,7 +157,7 @@ public class EvaluationRequest extends Thread {
       try {
         createMarkerFile(assignedTargetDirectory, taskDir.getName());
       } catch (IOException e) {
-        LOG.error("Could not create marker file: {}", taskDir.getAbsolutePath(), e);
+        LOG.error("Could not create marker file in: {}", assignedTargetDirectory, e);
         moveToSystemIntervention(taskDir, e.getMessage());
       }
       return;
@@ -216,9 +216,9 @@ public class EvaluationRequest extends Thread {
     try {
       Files.move(taskDir.toPath(), assignedTargetDirectory.resolve(taskDir.getName()));
     } catch (IOException e) {
-      LOG.error("Cannot move task to target directory: %s".formatted(targetDirectories), e);
+      LOG.error("Cannot move task to target directory: %s".formatted(assignedTargetDirectory), e);
       moveToSystemIntervention(taskDir,
-          "Cannot move task to target directory: %s".formatted(targetDirectories));
+          "Cannot move task to target directory: %s".formatted(assignedTargetDirectory));
     }
 
   }
