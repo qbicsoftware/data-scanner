@@ -12,7 +12,8 @@ public class GlobalConfig {
 
   private final Pattern qbicMeasurementIdPattern;
 
-  public GlobalConfig(String usersErrorDirectoryName, String usersRegistrationDirectoryName, String qbicMeasurementIdPattern) {
+  public GlobalConfig(String usersErrorDirectoryName, String usersRegistrationDirectoryName,
+      String qbicMeasurementIdPattern) {
     if (usersErrorDirectoryName == null || usersErrorDirectoryName.isBlank()) {
       throw new IllegalArgumentException("usersErrorDirectoryName cannot be null or empty");
     }

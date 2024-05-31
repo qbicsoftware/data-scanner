@@ -4,7 +4,8 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Objects;
 
-public record RegistrationRequest(Instant timestamp, long lastModified, Path origin, Path target, Path userPath) {
+public record RegistrationRequest(Instant timestamp, long lastModified, Path origin, Path target,
+                                  Path userPath) {
 
   @Override
   public boolean equals(Object o) {

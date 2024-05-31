@@ -31,12 +31,18 @@ public class Application {
         AppConfig.class);
 
     ScannerConfiguration scannerConfiguration = context.getBean(ScannerConfiguration.class);
-    RegistrationWorkersConfig registrationWorkersConfig = context.getBean(RegistrationWorkersConfig.class);
-    RegistrationConfiguration registrationConfiguration = context.getBean(RegistrationConfiguration.class);
-    ProcessingWorkersConfig processingWorkersConfig = context.getBean(ProcessingWorkersConfig.class);
-    ProcessingConfiguration processingConfiguration = context.getBean(ProcessingConfiguration.class);
-    EvaluationWorkersConfig evaluationWorkersConfig = context.getBean(EvaluationWorkersConfig.class);
-    EvaluationConfiguration evaluationConfiguration = context.getBean(EvaluationConfiguration.class);
+    RegistrationWorkersConfig registrationWorkersConfig = context.getBean(
+        RegistrationWorkersConfig.class);
+    RegistrationConfiguration registrationConfiguration = context.getBean(
+        RegistrationConfiguration.class);
+    ProcessingWorkersConfig processingWorkersConfig = context.getBean(
+        ProcessingWorkersConfig.class);
+    ProcessingConfiguration processingConfiguration = context.getBean(
+        ProcessingConfiguration.class);
+    EvaluationWorkersConfig evaluationWorkersConfig = context.getBean(
+        EvaluationWorkersConfig.class);
+    EvaluationConfiguration evaluationConfiguration = context.getBean(
+        EvaluationConfiguration.class);
     GlobalConfig globalConfig = context.getBean(GlobalConfig.class);
 
     var requestQueue = new ConcurrentRegistrationQueue();
@@ -45,21 +51,22 @@ public class Application {
     log.info("Registering {} registration workers...", registrationWorkersConfig.amountOfWorkers());
 
     List<ProcessRegistrationRequest> registrationWorkers = new LinkedList<>();
-    for (int i=0; i<registrationWorkersConfig.amountOfWorkers(); i++) {
-      registrationWorkers.add(new ProcessRegistrationRequest(requestQueue, registrationConfiguration, globalConfig));
+    for (int i = 0; i < registrationWorkersConfig.amountOfWorkers(); i++) {
+      registrationWorkers.add(
+          new ProcessRegistrationRequest(requestQueue, registrationConfiguration, globalConfig));
     }
 
     log.info("Registering {} processing workers...", processingWorkersConfig.threads());
 
     List<ProcessingRequest> processingWorkers = new LinkedList<>();
-    for (int i=0; i<processingWorkersConfig.threads(); i++) {
+    for (int i = 0; i < processingWorkersConfig.threads(); i++) {
       processingWorkers.add(new ProcessingRequest(processingConfiguration));
     }
 
     log.info("Registering {} evaluation workers...", evaluationWorkersConfig.threads());
 
     List<EvaluationRequest> evaluationWorkers = new LinkedList<>();
-    for (int i=0; i<evaluationWorkersConfig.threads(); i++) {
+    for (int i = 0; i < evaluationWorkersConfig.threads(); i++) {
       evaluationWorkers.add(new EvaluationRequest(evaluationConfiguration));
     }
 

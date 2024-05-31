@@ -13,7 +13,8 @@ public class RegistrationWorkersConfig {
 
   private final String metadataFileName;
 
-  public RegistrationWorkersConfig(int threads, String workingDirectory, String targetDirectory, String metadataFileName) {
+  public RegistrationWorkersConfig(int threads, String workingDirectory, String targetDirectory,
+      String metadataFileName) {
     if (threads < 1) {
       throw new IllegalArgumentException("Number of threads must be greater than 0");
     }
