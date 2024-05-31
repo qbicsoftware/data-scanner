@@ -55,7 +55,7 @@ public class ProcessRegistrationRequest extends Thread {
   private final String metadataFileName;
   private final Path userErrorDirectory;
   private final Pattern measurementIdPattern;
-  private AtomicBoolean active = new AtomicBoolean(false);
+  private final AtomicBoolean active = new AtomicBoolean(false);
 
   public ProcessRegistrationRequest(@NonNull ConcurrentRegistrationQueue registrationQueue,
       @NonNull RegistrationConfiguration configuration, @NonNull GlobalConfig globalConfig) {

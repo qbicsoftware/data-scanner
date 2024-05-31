@@ -12,7 +12,8 @@ import java.nio.file.Path;
 public class AccessRightsEvaluation {
 
   /**
-   * Convenience method that checks if the application has write and executable permission for the given file.
+   * Convenience method that checks if the application has write and executable permission for the
+   * given file.
    *
    * @param file the path of the file of interest to evaluate
    * @throws IOException if one or both of the evaluated conditions are failing
@@ -23,7 +24,8 @@ public class AccessRightsEvaluation {
   }
 
   /**
-   * Convenience method that checks if the application has write and executable permission for the given file.
+   * Convenience method that checks if the application has write and executable permission for the
+   * given file.
    *
    * @param file the file of interest to evaluate
    * @throws IOException if one or both of the evaluated conditions are failing

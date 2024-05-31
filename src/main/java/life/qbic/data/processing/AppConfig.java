@@ -1,6 +1,5 @@
 package life.qbic.data.processing;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -58,7 +57,8 @@ class AppConfig {
       @Value("${evaluation.threads}") int amountOfWorkers,
       @Value("${evaluation.working.dir}") String workingDirectory,
       @Value("${evaluation.target.dirs}") String[] targetDirectory) {
-    return new EvaluationWorkersConfig(amountOfWorkers, workingDirectory, Arrays.stream(targetDirectory).toList());
+    return new EvaluationWorkersConfig(amountOfWorkers, workingDirectory,
+        Arrays.stream(targetDirectory).toList());
   }
 
   @Bean
@@ -89,6 +89,7 @@ class AppConfig {
       @Value("${users.error.directory.name}") String usersErrorDirectoryName,
       @Value("${users.registration.directory.name}") String usersRegistrationDirectoryName,
       @Value("${qbic.measurement-id.pattern}") String measurementIdPattern) {
-    return new GlobalConfig(usersErrorDirectoryName, usersRegistrationDirectoryName, measurementIdPattern);
+    return new GlobalConfig(usersErrorDirectoryName, usersRegistrationDirectoryName,
+        measurementIdPattern);
   }
 }

@@ -15,10 +15,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.regex.MatchResult;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import life.qbic.data.processing.ErrorSummary;
 import life.qbic.data.processing.Provenance;
 import life.qbic.data.processing.Provenance.ProvenanceException;
@@ -55,7 +51,7 @@ public class EvaluationRequest extends Thread {
   private Path assignedTargetDirectory;
 
   public EvaluationRequest(Path workingDirectory, RoundRobinDraw<Path> targetDirectories,
-     Path usersErrorDirectory) {
+      Path usersErrorDirectory) {
     this.setName(THREAD_NAME.formatted(nextThreadNumber()));
     this.workingDirectory = workingDirectory;
     this.targetDirectories = targetDirectories;
@@ -144,7 +140,9 @@ public class EvaluationRequest extends Thread {
       return;
     }
 
-    var measurementIdResult = provenance.qbicMeasurementID == null || provenance.qbicMeasurementID.isBlank() ? Optional.empty() : Optional.of(provenance.qbicMeasurementID);
+    var measurementIdResult =
+        provenance.qbicMeasurementID == null || provenance.qbicMeasurementID.isBlank()
+            ? Optional.empty() : Optional.of(provenance.qbicMeasurementID);
     if (measurementIdResult.isPresent()) {
       provenance.addToHistory(taskDir.getAbsolutePath());
       try {
@@ -205,14 +203,16 @@ public class EvaluationRequest extends Thread {
           Paths.get(provenance.userWorkDirectoryPath).resolve(usersErrorDirectory)
               .resolve(taskDir.getName()));
     } catch (IOException e) {
-      LOG.error("Cannot move task to user intervention: %s".formatted(Paths.get(provenance.userWorkDirectoryPath).resolve(usersErrorDirectory)), e);
+      LOG.error("Cannot move task to user intervention: %s".formatted(
+          Paths.get(provenance.userWorkDirectoryPath).resolve(usersErrorDirectory)), e);
       moveToSystemIntervention(taskDir, e.getMessage());
     }
   }
 
   private void moveToTargetDir(File taskDir) {
     LOG.info(
-        "Moving %s to target directory %s".formatted(taskDir.getAbsolutePath(), assignedTargetDirectory));
+        "Moving %s to target directory %s".formatted(taskDir.getAbsolutePath(),
+            assignedTargetDirectory));
     try {
       Files.move(taskDir.toPath(), assignedTargetDirectory.resolve(taskDir.getName()));
     } catch (IOException e) {

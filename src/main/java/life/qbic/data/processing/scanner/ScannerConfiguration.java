@@ -34,7 +34,7 @@ public class ScannerConfiguration {
     return scanInterval;
   }
 
-  public Collection<String> ignore () {
+  public Collection<String> ignore() {
     return Arrays.stream(ignore).toList();
   }
 }

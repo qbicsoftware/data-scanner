@@ -3,7 +3,6 @@ package life.qbic.data.processing.config;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.regex.Pattern;
 
 public class EvaluationWorkersConfig {
 

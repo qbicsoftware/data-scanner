@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
-import java.util.regex.Pattern;
 import life.qbic.data.processing.AccessRightsEvaluation;
 import life.qbic.data.processing.GlobalConfig;
 import life.qbic.data.processing.config.RoundRobinDraw;
