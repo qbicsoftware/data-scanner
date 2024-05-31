@@ -1,10 +1,12 @@
 package life.qbic.data.processing.scanner;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
+import life.qbic.data.processing.AccessRightsEvaluation;
 
 public class ScannerConfiguration {
 
@@ -12,20 +14,14 @@ public class ScannerConfiguration {
   private final int scanInterval;
   private final String[] ignore;
 
-  public ScannerConfiguration(String scannerDirectory, int interval, String[] ignore) {
+  public ScannerConfiguration(String scannerDirectory, int interval, String[] ignore)
+      throws IOException {
     this.scannerDirectory = Paths.get(scannerDirectory);
     if (interval <= 0) {
       throw new IllegalArgumentException("Interval must be greater than 0");
     }
-    if (!this.scannerDirectory.toFile().exists()) {
-      throw new IllegalArgumentException("Scanner directory does not exist");
-    }
-    if (!this.scannerDirectory.toFile().canExecute()) {
-      throw new IllegalArgumentException("Scanner directory does not contain executable permissions");
-    }
-    if (!this.scannerDirectory.toFile().canWrite()) {
-      throw new IllegalArgumentException("Scanner directory does not contain write permissions");
-    }
+    AccessRightsEvaluation.evaluateExistenceAndDirectory(this.scannerDirectory);
+    AccessRightsEvaluation.evaluateWriteAndExecutablePermission(this.scannerDirectory);
     this.scanInterval = interval;
     this.ignore = Arrays.copyOf(Objects.requireNonNull(ignore), ignore.length);
   }
