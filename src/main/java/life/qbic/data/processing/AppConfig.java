@@ -1,5 +1,7 @@
 package life.qbic.data.processing;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import life.qbic.data.processing.config.EvaluationWorkersConfig;
@@ -44,7 +46,7 @@ class AppConfig {
 
   @Bean
   RegistrationConfiguration registrationConfiguration(
-      RegistrationWorkersConfig registrationWorkersConfig) {
+      RegistrationWorkersConfig registrationWorkersConfig) throws IOException {
     return new RegistrationConfiguration(registrationWorkersConfig.workingDirectory().toString(),
         registrationWorkersConfig.targetDirectory().toString(),
         registrationWorkersConfig.metadataFileName());
@@ -60,7 +62,7 @@ class AppConfig {
 
   @Bean
   EvaluationConfiguration evaluationConfiguration(EvaluationWorkersConfig evaluationWorkersConfig,
-      GlobalConfig globalConfig) {
+      GlobalConfig globalConfig) throws IOException {
     return new EvaluationConfiguration(evaluationWorkersConfig.workingDirectory().toString(),
         evaluationWorkersConfig.targetDirectories(), globalConfig);
   }
@@ -75,7 +77,8 @@ class AppConfig {
   }
 
   @Bean
-  ProcessingConfiguration processingConfiguration(ProcessingWorkersConfig processingWorkersConfig) {
+  ProcessingConfiguration processingConfiguration(ProcessingWorkersConfig processingWorkersConfig)
+      throws IOException {
     return new ProcessingConfiguration(processingWorkersConfig.workingDirectory(),
         processingWorkersConfig.targetDirectory());
   }
@@ -87,5 +90,4 @@ class AppConfig {
       @Value("${qbic.measurement-id.pattern}") String measurementIdPattern) {
     return new GlobalConfig(usersErrorDirectoryName, usersRegistrationDirectoryName, measurementIdPattern);
   }
-
 }

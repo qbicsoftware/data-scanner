@@ -1,6 +1,8 @@
 package life.qbic.data.processing.processing;
 
+import java.io.IOException;
 import java.nio.file.Path;
+import life.qbic.data.processing.AccessRightsEvaluation;
 
 /**
  * <b>Processing Configuration</b>
@@ -17,15 +19,13 @@ public class ProcessingConfiguration {
 
   private final Path targetDirectory;
 
-  public ProcessingConfiguration(Path workingDirectory, Path targetDirectory) {
+  public ProcessingConfiguration(Path workingDirectory, Path targetDirectory) throws IOException {
     this.workingDirectory = workingDirectory;
-    if (!workingDirectory.toFile().exists()) {
-      throw new IllegalArgumentException("Working directory does not exist: " + workingDirectory);
-    }
+    AccessRightsEvaluation.evaluateExistenceAndDirectory(this.workingDirectory);
+    AccessRightsEvaluation.evaluateWriteAndExecutablePermission(this.workingDirectory);
     this.targetDirectory = targetDirectory;
-    if (!targetDirectory.toFile().exists()) {
-      throw new IllegalArgumentException("Target directory does not exist: " + targetDirectory);
-    }
+    AccessRightsEvaluation.evaluateExistenceAndDirectory(this.targetDirectory);
+    AccessRightsEvaluation.evaluateWriteAndExecutablePermission(this.workingDirectory);
   }
 
   public Path getWorkingDirectory() {
