@@ -104,8 +104,16 @@ public class Scanner extends Thread {
         .map(Path::toFile)
         .filter(this::matchesAccessRightsCriteria)
         .filter(this::matchesRegistrationCriteria)
-        .map(file -> createRequests(file.listFiles(), file.toPath())).flatMap(
-            Collection::stream).toList();
+        .map(processDir -> createRequests(
+            applyFilterForProcessDir(processDir.listFiles()),
+            processDir.toPath()))
+        .flatMap(Collection::stream).toList();
+  }
+
+  private File[] applyFilterForProcessDir(File[] processDirContent) {
+    return Arrays.stream(Objects.requireNonNull(processDirContent))
+        .filter(this::matchesAccessRightsCriteria)
+        .filter(this::matchesRegistrationCriteria).toArray(File[]::new);
   }
 
   private boolean matchesAccessRightsCriteria(File file) {
