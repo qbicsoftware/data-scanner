@@ -70,7 +70,6 @@ public class Provenance {
     }
     ObjectMapper mapper = new ObjectMapper().configure(
         DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    ;
     Provenance provenance;
     try {
       provenance = mapper.readValue(Files.readString(json), Provenance.class);

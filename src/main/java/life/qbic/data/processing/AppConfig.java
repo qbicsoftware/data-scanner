@@ -1,5 +1,6 @@
 package life.qbic.data.processing;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import life.qbic.data.processing.config.EvaluationWorkersConfig;
@@ -28,7 +29,8 @@ class AppConfig {
   @Bean
   ScannerConfiguration scannerConfiguration(
       @Value("${scanner.directory}") String scannerDirectory,
-      @Value("${scanner.interval}") int interval, @Value("${scanner.ignore}") String[] ignore) {
+      @Value("${scanner.interval}") int interval, @Value("${scanner.ignore}") String[] ignore)
+      throws IOException {
     return new ScannerConfiguration(scannerDirectory, interval, ignore);
   }
 
@@ -44,7 +46,7 @@ class AppConfig {
 
   @Bean
   RegistrationConfiguration registrationConfiguration(
-      RegistrationWorkersConfig registrationWorkersConfig) {
+      RegistrationWorkersConfig registrationWorkersConfig) throws IOException {
     return new RegistrationConfiguration(registrationWorkersConfig.workingDirectory().toString(),
         registrationWorkersConfig.targetDirectory().toString(),
         registrationWorkersConfig.metadataFileName());
@@ -55,12 +57,13 @@ class AppConfig {
       @Value("${evaluation.threads}") int amountOfWorkers,
       @Value("${evaluation.working.dir}") String workingDirectory,
       @Value("${evaluation.target.dirs}") String[] targetDirectory) {
-    return new EvaluationWorkersConfig(amountOfWorkers, workingDirectory, Arrays.stream(targetDirectory).toList());
+    return new EvaluationWorkersConfig(amountOfWorkers, workingDirectory,
+        Arrays.stream(targetDirectory).toList());
   }
 
   @Bean
   EvaluationConfiguration evaluationConfiguration(EvaluationWorkersConfig evaluationWorkersConfig,
-      GlobalConfig globalConfig) {
+      GlobalConfig globalConfig) throws IOException {
     return new EvaluationConfiguration(evaluationWorkersConfig.workingDirectory().toString(),
         evaluationWorkersConfig.targetDirectories(), globalConfig);
   }
@@ -75,7 +78,8 @@ class AppConfig {
   }
 
   @Bean
-  ProcessingConfiguration processingConfiguration(ProcessingWorkersConfig processingWorkersConfig) {
+  ProcessingConfiguration processingConfiguration(ProcessingWorkersConfig processingWorkersConfig)
+      throws IOException {
     return new ProcessingConfiguration(processingWorkersConfig.workingDirectory(),
         processingWorkersConfig.targetDirectory());
   }
@@ -85,7 +89,7 @@ class AppConfig {
       @Value("${users.error.directory.name}") String usersErrorDirectoryName,
       @Value("${users.registration.directory.name}") String usersRegistrationDirectoryName,
       @Value("${qbic.measurement-id.pattern}") String measurementIdPattern) {
-    return new GlobalConfig(usersErrorDirectoryName, usersRegistrationDirectoryName, measurementIdPattern);
+    return new GlobalConfig(usersErrorDirectoryName, usersRegistrationDirectoryName,
+        measurementIdPattern);
   }
-
 }

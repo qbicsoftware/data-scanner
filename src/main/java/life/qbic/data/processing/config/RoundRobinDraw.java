@@ -22,10 +22,13 @@ public class RoundRobinDraw<T> {
   }
 
   /**
-   * Creates an instance of {@link RoundRobinDraw} based on the type {@link T} of the collection provided
+   * Creates an instance of {@link RoundRobinDraw} based on the type {@link T} of the collection
+   * provided
+   *
    * @param items a collection of items the round robin method shall be applied.
    * @return an instance of this class
-   * @throws IllegalArgumentException if an empty collection is provided or the collection is <code>null</code>
+   * @throws IllegalArgumentException if an empty collection is provided or the collection is
+   *                                  <code>null</code>
    * @since 1.0.0
    */
   public static <T> RoundRobinDraw<T> create(Collection<T> items) throws IllegalArgumentException {

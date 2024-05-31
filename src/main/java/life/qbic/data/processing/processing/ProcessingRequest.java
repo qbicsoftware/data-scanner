@@ -107,7 +107,9 @@ public class ProcessingRequest extends Thread {
    * @since
    */
   private void processFile(File taskDir) {
-    var taskDirContent = Arrays.stream(Objects.requireNonNull(taskDir.listFiles(), "Task dir must not be null: " + taskDir)).toList();
+    var taskDirContent = Arrays.stream(
+            Objects.requireNonNull(taskDir.listFiles(), "Task dir must not be null: " + taskDir))
+        .toList();
 
     if (checkForEmpty(taskDir, taskDirContent)) {
       return;
