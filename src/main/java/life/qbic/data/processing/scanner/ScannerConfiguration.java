@@ -21,7 +21,7 @@ public class ScannerConfiguration {
       throw new IllegalArgumentException("Interval must be greater than 0");
     }
     AccessRightsEvaluation.evaluateExistenceAndDirectory(this.scannerDirectory);
-    AccessRightsEvaluation.evaluateWriteAndExecutablePermission(this.scannerDirectory);
+    AccessRightsEvaluation.evaluateReadAndExecutablePermission(this.scannerDirectory);
     this.scanInterval = interval;
     this.ignore = Arrays.copyOf(Objects.requireNonNull(ignore), ignore.length);
   }

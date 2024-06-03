@@ -67,5 +67,32 @@ public class AccessRightsEvaluation {
     }
   }
 
+  /**
+   * Convenience method that checks if file can be read and executed by the application.
+   *
+   * @param file the path of the file of interest to evaluate
+   * @throws IOException if neither of the evaluated conditions are failing
+   * @since 1.0.0
+   */
+  public static void evaluateReadAndExecutablePermission(Path file) throws IOException {
+    evaluateReadAndExecutablePermission(file.toFile());
+  }
+
+  /**
+   * Convenience method that checks if file can be read and executed by the application.
+   *
+   * @param file the file of interest to evaluate
+   * @throws IOException if neither of the evaluated conditions are failing
+   * @since 1.0.0
+   */
+  public static void evaluateReadAndExecutablePermission(File file) throws IOException {
+    if (!file.canExecute()) {
+      throw new IOException("Cannot execute file " + file);
+    }
+    if (!file.canRead()) {
+      throw new IOException("Cannot read file " + file);
+    }
+  }
+
 
 }
