@@ -19,6 +19,7 @@ import life.qbic.data.processing.ErrorSummary;
 import life.qbic.data.processing.Provenance;
 import life.qbic.data.processing.Provenance.ProvenanceException;
 import life.qbic.data.processing.config.RoundRobinDraw;
+import org.apache.commons.io.FileUtils;
 import org.apache.logging.log4j.Logger;
 
 /**
@@ -151,11 +152,23 @@ public class EvaluationRequest extends Thread {
         LOG.error("Could not update provenance file: {}", taskDir.getAbsolutePath(), e);
         moveToSystemIntervention(taskDir, e.getMessage());
       }
-      moveToTargetDir(taskDir);
+      try {
+        copyToTargetDir(taskDir);
+      } catch (IOException e) {
+        LOG.error("Could not copy to target directory: {}", taskDir.getAbsolutePath(), e);
+        moveToSystemIntervention(taskDir,
+            "Cannot copy task to target directory: %s".formatted(assignedTargetDirectory));
+      }
       try {
         createMarkerFile(assignedTargetDirectory, taskDir.getName());
       } catch (IOException e) {
         LOG.error("Could not create marker file in: {}", assignedTargetDirectory, e);
+        moveToSystemIntervention(taskDir, e.getMessage());
+      }
+      try {
+        cleanup(taskDir);
+      } catch (IOException e) {
+        LOG.error("Could not clean up task directory: {}", taskDir.getAbsolutePath(), e);
         moveToSystemIntervention(taskDir, e.getMessage());
       }
       return;
@@ -168,6 +181,11 @@ public class EvaluationRequest extends Thread {
         "Missing measurement identifier: no known measurement id was found in the content of directory '{}' in task '{}'",
         String.join(", ", provenance.datasetFiles), taskDir.getName());
     moveBackToOrigin(taskDir, provenance, errorMessage.toString());
+  }
+
+  private void cleanup(File taskDir) throws IOException {
+    LOG.info("Deleting task directory: {}", taskDir.getAbsolutePath());
+    FileUtils.deleteDirectory(taskDir);
   }
 
   private void updateProvenanceFile(File provenanceFile, Provenance provenance) throws IOException {
@@ -209,18 +227,11 @@ public class EvaluationRequest extends Thread {
     }
   }
 
-  private void moveToTargetDir(File taskDir) {
+  private void copyToTargetDir(File taskDir) throws IOException {
     LOG.info(
-        "Moving %s to target directory %s".formatted(taskDir.getAbsolutePath(),
+        "Copying %s to target directory %s".formatted(taskDir.getAbsolutePath(),
             assignedTargetDirectory));
-    try {
-      Files.move(taskDir.toPath(), assignedTargetDirectory.resolve(taskDir.getName()));
-    } catch (IOException e) {
-      LOG.error("Cannot move task to target directory: %s".formatted(assignedTargetDirectory), e);
-      moveToSystemIntervention(taskDir,
-          "Cannot move task to target directory: %s".formatted(assignedTargetDirectory));
-    }
-
+    FileUtils.copyDirectory(taskDir, assignedTargetDirectory.resolve(taskDir.getName()).toFile());
   }
 
   private List<File> tasks() {
