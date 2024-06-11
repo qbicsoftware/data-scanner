@@ -1,4 +1,4 @@
-# Data processing
+# Data scanner
 
 A small Java application that listens to data ready for registration and performs several
 pre-registration
