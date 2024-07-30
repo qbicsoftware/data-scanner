@@ -265,7 +265,7 @@ evaluation.working.dir=${EVALUATION_DIR}
 # Example multiple target dir:
 #   evaluation.target.dirs=/my/example/target/dir1,/my/example/target/dir2,/my/example/target/dir3
 evaluation.target.dirs=${OPENBIS_ETL_DIRS}
-evaluation.measurement-id.pattern=^(MS|NGS)Q[A-Z0-9]{4}[0-9]{3}[A-Z0-9]{2}-[0-9]*
+evaluation.measurement-id.pattern=${MEASUREMENT_ID_PATTERN:^(MS|NGS)Q[A-Z0-9]{4}[0-9]{3}[A-Z0-9]{2}-[0-9]*}
 ```
 
 > [!NOTE]
